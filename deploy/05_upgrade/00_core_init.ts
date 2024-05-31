@@ -67,12 +67,14 @@ const func: DeployFunction = async function ({
     network
   );
 
+  const wrappedTokenGatewayArtifact = await deployments.getOrNull(WRAPPED_TOKEN_GATEWAY_ID);
+
   await waitForTx(
     await proxyAdmin.upgradeAndCall(
       DelegationManagerProxyArtifact.address,
       DelegationManagerImplArtifact.address,
       ifaceDelegation.encodeFunctionData('initialize', [
-        deployer,
+        wrappedTokenGatewayArtifact == null ? owner : deployer,
         pauserRegistryAddress,
         delegationManagerPausedStatus,
         minWithdrawalDelay,
@@ -87,11 +89,13 @@ const func: DeployFunction = async function ({
     'DelegationManager',
     DelegationManagerProxyArtifact.address
   );
-  const { address: wrappedTokenGatewayAddress } = await deployments.get(WRAPPED_TOKEN_GATEWAY_ID);
-  await waitForTx(
-    await delegationManagerInstance.updateWrappedTokenGateway(wrappedTokenGatewayAddress)
-  );
-  console.log(`[Deployment][INFO] Config gateway ${strategies}`);
+
+  if (wrappedTokenGatewayArtifact) {
+    await waitForTx(
+      await delegationManagerInstance.updateWrappedTokenGateway(wrappedTokenGatewayArtifact.address)
+    );
+    console.log(`[Deployment][INFO] Config gateway ${strategies}`);
+  }
 
   const whiteLister = getParamPerNetwork(Configs.WhiteLister, network);
   const strategyManagerPausedStatus = getParamPerNetwork(

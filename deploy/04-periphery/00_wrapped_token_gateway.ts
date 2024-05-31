@@ -24,13 +24,19 @@ const func: DeployFunction = async function ({
   const { deployer } = await getNamedAccounts();
 
   const network = (FORK ? FORK : hre.network.name) as eNetwork;
+
+  const wbnbStrategyArtifact = await deployments.getOrNull(`WBNB${STRATEGY_PROXY_ID}`);
+  if (!wbnbStrategyArtifact) {
+    console.log('[Deployment] Skipping wrapped token gateway');
+    return true;
+  }
+
   const owner = getParamPerNetwork(Configs.Owner, network);
   const wrappedTokenAddress = getParamPerNetwork(Configs.WrappedTokenAddress, network);
   if (!owner || !wrappedTokenAddress) {
     throw '[Deployment][Error] Owner or WrappedTokenAddress not config';
   }
 
-  const { address: strategyAddress } = await deployments.get(`WBNB${STRATEGY_PROXY_ID}`);
   const { address: strategyManagerAddress } = await deployments.get(STRATEGY_MANAGER_PROXY_ID);
   const { address: delegationManagerAddress } = await deployments.get(DELEGATION_MANAGER_PROXY_ID);
 
@@ -40,7 +46,7 @@ const func: DeployFunction = async function ({
     args: [
       wrappedTokenAddress,
       owner,
-      strategyAddress,
+      wbnbStrategyArtifact.address,
       strategyManagerAddress,
       delegationManagerAddress,
     ],
