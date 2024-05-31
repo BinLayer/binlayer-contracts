@@ -1,0 +1,16 @@
+export enum ProtocolErrors {
+  ZERO_ADDRESS_NOT_VALID = '1', // 'Zero address not valid'
+  CANT_RENOUNCE_OWNERSHIP = '2', // 'Can't renounce ownership'
+  CONFIG_SUPPORT_ASEETS = '3', // 'Config sales contract support assets'
+  INVALID_CUSTODIAN_ADDRESS = '4', // 'Invalid custodian address'
+  INVALID_ASSET_ADDRESS = '5', // 'Invalid asset address'
+  INVALID_FEE_RATE = '6', // 'Fee rate must be greater than 0 and less than 1e5'
+  ZERO_AMOUNT_NOT_VALID = '7', // 'Zero amount not valid'
+  INVALID_ROUTE = '8', // 'Invalid route'
+  INVALID_TOKEN = '9', // 'Invalid token'
+  INVALID_COOLDOWN = '10', // 'Invalid cooldown'
+  EXCESSIVE_REDEEM_AMOUNT = '11', // 'Excessive redeem amount'
+  INVALID_AMOUNT = '12', // 'Invalid amount'
+  COOLDOWN_NOT_OVER = '13', // 'Cooldown not over'
+  MIN_REDEEM_VIOLATION = '14', // 'Min redeem violation'
+}
