@@ -61,6 +61,7 @@ export const LIVE_NETWORKS: iParamsPerNetwork<boolean> = {
 
 const GAS_PRICE_PER_NET: iParamsPerNetwork<string | number> = {
   [eArbitrumNetwork.arbitrumSepolia]: 100000001,
+  [eBscNetwork.bsc]: 1000000000,
 };
 
 export const buildForkConfig = (): HardhatNetworkForkingUserConfig | undefined => {
