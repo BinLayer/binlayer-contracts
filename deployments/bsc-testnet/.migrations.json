@@ -5,7 +5,7 @@
   "CoreProxy": 1717129503,
   "CoreImpl": 1717129523,
   "StrategyImpl": 1717129530,
-  "StrategyInitialize": 1717129546,
   "WrappedTokenGateway": 1717129552,
-  "CoreInitialize": 1717129588
+  "CoreInitialize": 1717129588,
+  "StrategyInitialize": 1718100311
 }

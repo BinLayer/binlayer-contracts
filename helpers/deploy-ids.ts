@@ -12,3 +12,4 @@ export const STRATEGY_PROXY_ID = `-Strategy-${PROXY_ID}`;
 export const EMPTY_CONTRANCT_ID = 'EmptyContract';
 export const PROXY_ADMIN_ID = 'ProxyAdmin';
 export const WRAPPED_TOKEN_GATEWAY_ID = 'WrappedTokenGateway';
+export const LISTA_GATEWAY_ID = 'ListaGateway';

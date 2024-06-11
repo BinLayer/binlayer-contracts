@@ -24,6 +24,14 @@ export const Configs: IConfiguration = {
           '115792089237316195423570985008687907853269984665640564039457584007913129639935',
         withdrawalDelay: 180,
       },
+      slisBNB: {
+        tokenAddress: '0x96F124Ce690F082f469066aFE90AF633F93d94d8',
+        tokenName: 'Staked Lista BNB',
+        tokenSymbol: 'slisBNB',
+        maxPerDeposit: '10000000000000000000000',
+        maxDeposits: '10000000000000000000000000',
+        withdrawalDelay: 180,
+      },
     },
     [eBscNetwork.bsc]: {
       slisBNB: {
