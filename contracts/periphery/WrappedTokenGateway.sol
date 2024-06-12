@@ -29,7 +29,7 @@ contract WrappedTokenGateway is IWrappedTokenGateway, Ownable {
     strategy = _strategy;
     strategyManager = _strategyManager;
     delegationManager = _delegationManager;
-    transferOwnership(_owner);
+    _transferOwnership(_owner);
     IWrappedToken(_wrappedToken).approve(address(strategyManager), type(uint256).max);
   }
 

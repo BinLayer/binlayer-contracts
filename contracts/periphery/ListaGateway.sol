@@ -29,7 +29,7 @@ contract ListaGateway is IListaGateway, Ownable {
     listaStakeManager = _listaStakeManager;
     strategy = _strategy;
     strategyManager = _strategyManager;
-    transferOwnership(_owner);
+    _transferOwnership(_owner);
     IERC20(_slisBNB).approve(address(strategyManager), type(uint256).max);
   }
 
