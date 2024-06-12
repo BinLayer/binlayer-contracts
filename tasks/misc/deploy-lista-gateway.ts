@@ -20,12 +20,13 @@ task(`deploy-lista-gateway`, `Deploys the ListaGateway contract`).setAction(asyn
   const network = (FORK ? FORK : hre.network.name) as eNetwork;
   const owner = getParamPerNetwork(Configs.Owner, network);
 
-  // main
-  // stakeManager: 0x1adB950d8bB3dA4bE104211D5AB038628e477fE6
-  // slisBNB: 0xB0b84D294e0C75A6abe60171b70edEb2EFd14A1B
+  // bsc
+  const listaStakeManagerAddress = '0x1adB950d8bB3dA4bE104211D5AB038628e477fE6';
+  const slisBNBAddress = '0xB0b84D294e0C75A6abe60171b70edEb2EFd14A1B';
 
-  const listaStakeManagerAddress = '0x3A2231E023296bbc177d7587DdFd60B0A96F3A29';
-  const slisBNBAddress = '0x96F124Ce690F082f469066aFE90AF633F93d94d8';
+  // bsc-testnet
+  // const listaStakeManagerAddress = '0x3A2231E023296bbc177d7587DdFd60B0A96F3A29';
+  // const slisBNBAddress = '0x96F124Ce690F082f469066aFE90AF633F93d94d8';
 
   const { address: strategyAddress } = await hre.deployments.get(`slisBNB${STRATEGY_PROXY_ID}`);
   const { address: strategyManagerAddress } = await hre.deployments.get(STRATEGY_MANAGER_PROXY_ID);
