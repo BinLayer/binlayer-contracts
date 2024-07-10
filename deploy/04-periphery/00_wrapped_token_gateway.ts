@@ -38,7 +38,7 @@ const func: DeployFunction = async function ({
   }
 
   const { address: strategyManagerAddress } = await deployments.get(STRATEGY_MANAGER_PROXY_ID);
-  const { address: delegationManagerAddress } = await deployments.get(DELEGATION_MANAGER_PROXY_ID);
+  const { address: delegationControllerAddress } = await deployments.get(DELEGATION_MANAGER_PROXY_ID);
 
   await deploy(WRAPPED_TOKEN_GATEWAY_ID, {
     contract: 'WrappedTokenGateway',
@@ -48,7 +48,7 @@ const func: DeployFunction = async function ({
       owner,
       wbnbStrategyArtifact.address,
       strategyManagerAddress,
-      delegationManagerAddress,
+      delegationControllerAddress,
     ],
     ...COMMON_DEPLOY_PARAMS,
   });

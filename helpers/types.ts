@@ -71,7 +71,7 @@ export interface IConfiguration {
   StrategyConfigs: iParamsPerNetwork<SymbolMap<StrategyConfig>>;
   MinWithdrawalDelay: iParamsPerNetwork<number>;
   StrategyManagerPausedStatus: iParamsPerNetwork<BigNumberish>;
-  DelegationManagerPausedStatus: iParamsPerNetwork<BigNumberish>;
+  DelegationControllerPausedStatus: iParamsPerNetwork<BigNumberish>;
   SlasherPausedStatus: iParamsPerNetwork<BigNumberish>;
   WrappedTokenAddress: iParamsPerNetwork<tEthereumAddress>;
   Owner: iParamsPerNetwork<tEthereumAddress>;

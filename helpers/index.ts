@@ -2,7 +2,7 @@ export * from './constants';
 export * from './hardhat-config-helpers';
 export * from './types';
 export * from './utilities/tx';
-export * from '../typechain';
+// export * from '../typechain';
 
 import { loadTasks } from './hardhat-config-helpers';
 

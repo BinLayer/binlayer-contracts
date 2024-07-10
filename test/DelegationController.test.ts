@@ -5,12 +5,12 @@ import { MAX_UINT_AMOUNT, ONE_ADDRESS, ONE_HOUR, ZERO_ADDRESS } from '../helpers
 import { parseUnits } from 'ethers/lib/utils';
 import TransparentUpgradeableProxy from './build/TransparentUpgradeableProxy.json';
 import ProxyAdminArtifact from './build/ProxyAdmin.json';
-import DelegationManagerABI from '../abis/DelegationManager.json';
+import DelegationControllerABI from '../abis/DelegationController.json';
 import StrategyManagerABI from '../abis/StrategyManager.json';
 import { BigNumberish } from 'ethers';
 import { increaseTime } from '../helpers';
 
-describe('DelegationManager', () => {
+describe('DelegationController', () => {
   const MAX_PER_DEPOSIT = parseUnits('1000', 18);
   const MAX_TOTAL_DEPOSIT = parseUnits('2000', 18);
   async function deployStrategyManagerFixture() {
@@ -36,23 +36,23 @@ describe('DelegationManager', () => {
       proxyAdmin.address,
       '0x'
     );
-    const DelegationManagerProxy = await ethers.getContractFactory(
+    const DelegationControllerProxy = await ethers.getContractFactory(
       TransparentUpgradeableProxy.abi,
       TransparentUpgradeableProxy.bytecode
     );
-    let delegationManagerProxy = await DelegationManagerProxy.deploy(
+    let delegationControllerProxy = await DelegationControllerProxy.deploy(
       emptyContract.address,
       proxyAdmin.address,
       '0x'
     );
-    const DelegationManager = await ethers.getContractFactory('DelegationManager');
-    const delegationManager = await DelegationManager.deploy(
+    const DelegationController = await ethers.getContractFactory('DelegationController');
+    const delegationController = await DelegationController.deploy(
       strategyManagerProxy.address,
       slasherProxy.address
     );
     const StrategyManager = await ethers.getContractFactory('StrategyManager');
     const strategyManager = await StrategyManager.deploy(
-      delegationManagerProxy.address,
+      delegationControllerProxy.address,
       slasherProxy.address
     );
 
@@ -63,10 +63,10 @@ describe('DelegationManager', () => {
       { constructorArgs: [strategyManagerProxy.address] }
     );
 
-    const ifaceDelegation = new ethers.utils.Interface(DelegationManagerABI);
+    const ifaceDelegation = new ethers.utils.Interface(DelegationControllerABI);
     await proxyAdmin.upgradeAndCall(
-      delegationManagerProxy.address,
-      delegationManager.address,
+      delegationControllerProxy.address,
+      delegationController.address,
       ifaceDelegation.encodeFunctionData('initialize', [
         owner.address,
         pauserRegistry.address,
@@ -91,9 +91,9 @@ describe('DelegationManager', () => {
       'StrategyManager',
       strategyManagerProxy.address
     );
-    delegationManagerProxy = await ethers.getContractAt(
-      'DelegationManager',
-      delegationManagerProxy.address
+    delegationControllerProxy = await ethers.getContractAt(
+      'DelegationController',
+      delegationControllerProxy.address
     );
     return {
       owner,
@@ -104,11 +104,11 @@ describe('DelegationManager', () => {
       pauserRegistry,
       strategy,
       strategyManagerProxy,
-      delegationManagerProxy,
+      delegationControllerProxy,
     };
   }
 
-  describe('DelegationManager', () => {
+  describe('DelegationController', () => {
     describe('Initialize', async () => {
       it('check initialized', async () => {
         const {
@@ -117,7 +117,7 @@ describe('DelegationManager', () => {
           pauserRegistry,
           strategy,
           strategyManagerProxy,
-          delegationManagerProxy,
+          delegationControllerProxy,
         } = await loadFixture(deployStrategyManagerFixture);
         expect(await strategy.strategyManager()).to.be.equal(strategyManagerProxy.address);
         expect((await strategy.getTVLLimits())[0]).to.be.equal(MAX_PER_DEPOSIT);
@@ -127,18 +127,18 @@ describe('DelegationManager', () => {
         expect(await strategyManagerProxy.owner()).to.be.equal(owner.address);
         expect(await strategyManagerProxy.strategyWhitelister()).to.be.equal(owner.address);
         expect(await strategyManagerProxy.pauserRegistry()).to.be.equal(pauserRegistry.address);
-        expect(await strategyManagerProxy.delegation()).to.be.equal(delegationManagerProxy.address);
-        expect(await delegationManagerProxy.owner()).to.be.equal(owner.address);
-        expect(await delegationManagerProxy.pauserRegistry()).to.be.equal(pauserRegistry.address);
-        expect(await delegationManagerProxy.strategyManager()).to.be.equal(
+        expect(await strategyManagerProxy.delegation()).to.be.equal(delegationControllerProxy.address);
+        expect(await delegationControllerProxy.owner()).to.be.equal(owner.address);
+        expect(await delegationControllerProxy.pauserRegistry()).to.be.equal(pauserRegistry.address);
+        expect(await delegationControllerProxy.strategyManager()).to.be.equal(
           strategyManagerProxy.address
         );
-        expect(await delegationManagerProxy.minWithdrawalDelay()).to.be.equal(180);
+        expect(await delegationControllerProxy.minWithdrawalDelay()).to.be.equal(180);
       });
     });
     describe('Delegation', async () => {
       it('add operator will revert when pause', async () => {
-        const { owner, delegationManagerProxy } = await loadFixture(deployStrategyManagerFixture);
+        const { owner, delegationControllerProxy } = await loadFixture(deployStrategyManagerFixture);
         const operatorDetailsParams: {
           earningsReceiver: string;
           delegationApprover: string;
@@ -149,17 +149,17 @@ describe('DelegationManager', () => {
           stakerOptOutWindow: 10,
         };
         await expect(
-          delegationManagerProxy.registerAsOperator(
+          delegationControllerProxy.registerAsOperator(
             operatorDetailsParams,
             'https://raw.githubusercontent.com/.../main/metadata.json'
           )
         ).to.revertedWith('Pausable: index is paused');
       });
       it('add operator successful', async () => {
-        const { owner, unpauser, delegationManagerProxy } = await loadFixture(
+        const { owner, unpauser, delegationControllerProxy } = await loadFixture(
           deployStrategyManagerFixture
         );
-        await delegationManagerProxy.connect(unpauser).unpause(0);
+        await delegationControllerProxy.connect(unpauser).unpause(0);
         const operatorDetailsParams: {
           earningsReceiver: string;
           delegationApprover: string;
@@ -169,26 +169,26 @@ describe('DelegationManager', () => {
           delegationApprover: owner.address,
           stakerOptOutWindow: 10,
         };
-        await delegationManagerProxy.registerAsOperator(
+        await delegationControllerProxy.registerAsOperator(
           operatorDetailsParams,
           'https://raw.githubusercontent.com/.../main/metadata.json'
         );
-        expect(await delegationManagerProxy.isOperator(owner.address)).to.be.equal(true);
-        expect(await delegationManagerProxy.earningsReceiver(owner.address)).to.be.equal(
+        expect(await delegationControllerProxy.isOperator(owner.address)).to.be.equal(true);
+        expect(await delegationControllerProxy.earningsReceiver(owner.address)).to.be.equal(
           owner.address
         );
-        expect(await delegationManagerProxy.delegationApprover(owner.address)).to.be.equal(
+        expect(await delegationControllerProxy.delegationApprover(owner.address)).to.be.equal(
           owner.address
         );
-        expect(await delegationManagerProxy.stakerOptOutWindow(owner.address)).to.be.equal(10);
+        expect(await delegationControllerProxy.stakerOptOutWindow(owner.address)).to.be.equal(10);
       });
     });
     describe('QueueWithdraw', async () => {
       it('queue withdraw will revert when pause', async () => {
-        const { owner, usdt, pauser, strategy, strategyManagerProxy, delegationManagerProxy } =
+        const { owner, usdt, pauser, strategy, strategyManagerProxy, delegationControllerProxy } =
           await loadFixture(deployStrategyManagerFixture);
         // Pause
-        await delegationManagerProxy.connect(pauser).pause(3);
+        await delegationControllerProxy.connect(pauser).pause(3);
 
         expect(await usdt.balanceOf(strategy.address)).to.be.equal(0);
         await strategyManagerProxy.addStrategiesToDepositWhitelist([strategy.address], [false]);
@@ -210,7 +210,7 @@ describe('DelegationManager', () => {
         };
 
         await expect(
-          delegationManagerProxy.queueWithdrawals([queueWithdrawParams])
+          delegationControllerProxy.queueWithdrawals([queueWithdrawParams])
         ).to.revertedWith('Pausable: index is paused');
       });
       it('queue withdraw successful', async () => {
@@ -220,7 +220,7 @@ describe('DelegationManager', () => {
           pauserRegistry,
           strategy,
           strategyManagerProxy,
-          delegationManagerProxy,
+          delegationControllerProxy,
         } = await loadFixture(deployStrategyManagerFixture);
         expect(await usdt.balanceOf(strategy.address)).to.be.equal(0);
         await strategyManagerProxy.addStrategiesToDepositWhitelist([strategy.address], [false]);
@@ -241,13 +241,13 @@ describe('DelegationManager', () => {
           withdrawer: owner.address,
         };
         expect(await strategy.shares(owner.address)).to.be.equal(parseUnits('1000', 18));
-        await delegationManagerProxy.queueWithdrawals([queueWithdrawParams]);
+        await delegationControllerProxy.queueWithdrawals([queueWithdrawParams]);
         expect(await strategy.shares(owner.address)).to.be.equal(0);
       });
     });
     describe('CompleteWithdraw', async () => {
       it('complete withdraw revert when not reach withdraw delay', async () => {
-        const { owner, usdt, pauser, strategy, strategyManagerProxy, delegationManagerProxy } =
+        const { owner, usdt, pauser, strategy, strategyManagerProxy, delegationControllerProxy } =
           await loadFixture(deployStrategyManagerFixture);
         expect(await usdt.balanceOf(strategy.address)).to.be.equal(0);
         await strategyManagerProxy.addStrategiesToDepositWhitelist([strategy.address], [false]);
@@ -268,7 +268,7 @@ describe('DelegationManager', () => {
           withdrawer: owner.address,
         };
         expect(await strategy.shares(owner.address)).to.be.equal(parseUnits('1000', 18));
-        const tx = await delegationManagerProxy.queueWithdrawals([queueWithdrawParams]);
+        const tx = await delegationControllerProxy.queueWithdrawals([queueWithdrawParams]);
         const receipt = await tx.wait();
         const eventResp = receipt.events[0].args.withdrawal;
         expect(await strategy.shares(owner.address)).to.be.equal(0);
@@ -291,22 +291,22 @@ describe('DelegationManager', () => {
           shares: eventResp.shares,
         };
         await expect(
-          delegationManagerProxy.completeQueuedWithdrawals(
+          delegationControllerProxy.completeQueuedWithdrawals(
             [completeQueuedWithdrawalParams],
             [[usdt.address]],
             [0],
             [true]
           )
         ).to.revertedWith(
-          'DelegationManager._completeQueuedWithdrawal: minWithdrawalDelay period has not yet passed'
+          'DelegationController._completeQueuedWithdrawal: minWithdrawalDelay period has not yet passed'
         );
       });
       it('complete withdraw revert when pause', async () => {
-        const { owner, usdt, pauser, strategy, strategyManagerProxy, delegationManagerProxy } =
+        const { owner, usdt, pauser, strategy, strategyManagerProxy, delegationControllerProxy } =
           await loadFixture(deployStrategyManagerFixture);
 
         // Pause
-        await delegationManagerProxy.connect(pauser).pause(5);
+        await delegationControllerProxy.connect(pauser).pause(5);
 
         expect(await usdt.balanceOf(strategy.address)).to.be.equal(0);
         await strategyManagerProxy.addStrategiesToDepositWhitelist([strategy.address], [false]);
@@ -327,7 +327,7 @@ describe('DelegationManager', () => {
           withdrawer: owner.address,
         };
         expect(await strategy.shares(owner.address)).to.be.equal(parseUnits('1000', 18));
-        const tx = await delegationManagerProxy.queueWithdrawals([queueWithdrawParams]);
+        const tx = await delegationControllerProxy.queueWithdrawals([queueWithdrawParams]);
         const receipt = await tx.wait();
         const eventResp = receipt.events[0].args.withdrawal;
         expect(await strategy.shares(owner.address)).to.be.equal(0);
@@ -351,7 +351,7 @@ describe('DelegationManager', () => {
         };
         await increaseTime(360);
         await expect(
-          delegationManagerProxy.completeQueuedWithdrawals(
+          delegationControllerProxy.completeQueuedWithdrawals(
             [completeQueuedWithdrawalParams],
             [[usdt.address]],
             [0],
@@ -366,7 +366,7 @@ describe('DelegationManager', () => {
           pauserRegistry,
           strategy,
           strategyManagerProxy,
-          delegationManagerProxy,
+          delegationControllerProxy,
         } = await loadFixture(deployStrategyManagerFixture);
         expect(await usdt.balanceOf(strategy.address)).to.be.equal(0);
         await strategyManagerProxy.addStrategiesToDepositWhitelist([strategy.address], [false]);
@@ -387,7 +387,7 @@ describe('DelegationManager', () => {
           withdrawer: owner.address,
         };
         expect(await strategy.shares(owner.address)).to.be.equal(parseUnits('1000', 18));
-        const tx = await delegationManagerProxy.queueWithdrawals([queueWithdrawParams]);
+        const tx = await delegationControllerProxy.queueWithdrawals([queueWithdrawParams]);
         const receipt = await tx.wait();
         const eventResp = receipt.events[0].args.withdrawal;
         expect(await strategy.shares(owner.address)).to.be.equal(0);
@@ -411,7 +411,7 @@ describe('DelegationManager', () => {
         };
         await increaseTime(360);
         expect(await usdt.balanceOf(owner.address)).to.be.equal(parseUnits('999000', 18));
-        await delegationManagerProxy.completeQueuedWithdrawals(
+        await delegationControllerProxy.completeQueuedWithdrawals(
           [completeQueuedWithdrawalParams],
           [[usdt.address]],
           [0],

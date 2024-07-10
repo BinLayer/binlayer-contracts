@@ -36,8 +36,8 @@ contract StrategyManager is Initializable, OwnableUpgradeable, ReentrancyGuardUp
     _;
   }
 
-  modifier onlyDelegationManager() {
-    require(msg.sender == address(delegation), 'StrategyManager.onlyDelegationManager: not the DelegationManager');
+  modifier onlyDelegationController() {
+    require(msg.sender == address(delegation), 'StrategyManager.onlyDelegationController: not the DelegationController');
     _;
   }
 
@@ -45,7 +45,7 @@ contract StrategyManager is Initializable, OwnableUpgradeable, ReentrancyGuardUp
    * @param _delegation The delegation contract of BinLayer.
    * @param _slasher The primary slashing contract of BinLayer.
    */
-  constructor(IDelegationManager _delegation, ISlasher _slasher) StrategyManagerStorage(_delegation, _slasher) {
+  constructor(IDelegationController _delegation, ISlasher _slasher) StrategyManagerStorage(_delegation, _slasher) {
     _disableInitializers();
     ORIGINAL_CHAIN_ID = block.chainid;
   }
@@ -169,24 +169,24 @@ contract StrategyManager is Initializable, OwnableUpgradeable, ReentrancyGuardUp
     shares = _depositIntoStrategy(staker, strategy, token, amount);
   }
 
-  /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
-  function removeShares(address staker, IStrategy strategy, uint256 shares) external onlyDelegationManager {
+  /// @notice Used by the DelegationController.sol to remove a Staker's shares from a particular strategy when entering the withdrawal queue
+  function removeShares(address staker, IStrategy strategy, uint256 shares) external onlyDelegationController {
     _removeShares(staker, strategy, shares);
   }
 
-  /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
-  function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external onlyDelegationManager {
+  /// @notice Used by the DelegationController.sol to award a Staker some shares that have passed through the withdrawal queue
+  function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external onlyDelegationController {
     _addShares(staker, token, strategy, shares);
   }
 
-  /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
-  function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external onlyDelegationManager {
+  /// @notice Used by the DelegationController.sol to convert withdrawn shares to tokens and send them to a recipient
+  function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external onlyDelegationController {
     strategy.withdraw(recipient, token, shares);
   }
 
   /**
    * If true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
-   * and also when performing DelegationManager.queueWithdrawals, a staker can only withdraw to themselves.
+   * and also when performing DelegationController.sol.queueWithdrawals, a staker can only withdraw to themselves.
    * Defaulted to false for all existing strategies.
    * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
    * @param value bool value to set `thirdPartyTransfersForbidden` to

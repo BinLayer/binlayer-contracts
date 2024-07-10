@@ -21,13 +21,13 @@ const func: DeployFunction = async function ({
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  const DelegationManagerProxyArtifact = await deployments.get(DELEGATION_MANAGER_PROXY_ID);
+  const DelegationControllerProxyArtifact = await deployments.get(DELEGATION_MANAGER_PROXY_ID);
   const StrategyManagerProxyArtifact = await deployments.get(STRATEGY_MANAGER_PROXY_ID);
   const SlasherProxyArtifact = await deployments.get(SLASHER_PROXY_ID);
 
   await deploy(DELEGATION_MANAGER_IMPL_ID, {
     from: deployer,
-    contract: 'DelegationManager',
+    contract: 'DelegationController',
     args: [StrategyManagerProxyArtifact.address, SlasherProxyArtifact.address],
     ...COMMON_DEPLOY_PARAMS,
   });
@@ -35,14 +35,14 @@ const func: DeployFunction = async function ({
   await deploy(STRATEGY_MANAGER_IMPL_ID, {
     from: deployer,
     contract: 'StrategyManager',
-    args: [DelegationManagerProxyArtifact.address, SlasherProxyArtifact.address],
+    args: [DelegationControllerProxyArtifact.address, SlasherProxyArtifact.address],
     ...COMMON_DEPLOY_PARAMS,
   });
 
   await deploy(SLASHER_IMPL_ID, {
     from: deployer,
     contract: 'Slasher',
-    args: [StrategyManagerProxyArtifact.address, DelegationManagerProxyArtifact.address],
+    args: [StrategyManagerProxyArtifact.address, DelegationControllerProxyArtifact.address],
     ...COMMON_DEPLOY_PARAMS,
   });
 

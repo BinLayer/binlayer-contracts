@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import './IStrategyManager.sol';
-import './IDelegationManager.sol';
+import './IDelegationController.sol';
 
 /**
  * @title Interface for the primary 'slashing' contract for BinLayer.
@@ -99,8 +99,8 @@ interface ISlasher {
   /// @notice The StrategyManager contract of BinLayer
   function strategyManager() external view returns (IStrategyManager);
 
-  /// @notice The DelegationManager contract of BinLayer
-  function delegation() external view returns (IDelegationManager);
+  /// @notice The DelegationController.sol contract of BinLayer
+  function delegation() external view returns (IDelegationController);
 
   /**
    * @notice Used to determine whether `staker` is actively 'frozen'. If a staker is frozen, then they are potentially subject to

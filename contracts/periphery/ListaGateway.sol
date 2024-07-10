@@ -7,7 +7,7 @@ import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IListaStakeManager} from '../interfaces/IListaStakeManager.sol';
 import {IStrategy} from '../interfaces/IStrategy.sol';
 import {IStrategyManager} from '../interfaces/IStrategyManager.sol';
-import {IDelegationManager} from '../interfaces/IDelegationManager.sol';
+import {IDelegationController} from '../interfaces/IDelegationController.sol';
 import {IListaGateway} from '../interfaces/IListaGateway.sol';
 
 contract ListaGateway is IListaGateway, Ownable {

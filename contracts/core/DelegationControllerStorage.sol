@@ -2,14 +2,14 @@
 pragma solidity 0.8.20;
 
 import '../interfaces/IStrategyManager.sol';
-import '../interfaces/IDelegationManager.sol';
+import '../interfaces/IDelegationController.sol';
 import '../interfaces/ISlasher.sol';
 
 /**
- * @title Storage variables for the `DelegationManager` contract.
+ * @title Storage variables for the `DelegationController.sol` contract.
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
-abstract contract DelegationManagerStorage is IDelegationManager {
+abstract contract DelegationControllerStorage is IDelegationController {
   /// @notice The EIP-712 typehash for the contract's domain
   bytes32 public constant DOMAIN_TYPEHASH = keccak256('EIP712Domain(string name,uint256 chainId,address verifyingContract)');
 

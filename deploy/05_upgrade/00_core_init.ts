@@ -31,14 +31,14 @@ const func: DeployFunction = async function ({
 
   const { address: pauserRegistryAddress } = await deployments.get(PAUSER_REGISTRY_ID);
 
-  const DelegationManagerProxyArtifact = await deployments.get(DELEGATION_MANAGER_PROXY_ID);
+  const DelegationControllerProxyArtifact = await deployments.get(DELEGATION_MANAGER_PROXY_ID);
   const StrategyManagerProxyArtifact = await deployments.get(STRATEGY_MANAGER_PROXY_ID);
   const SlasherProxyArtifact = await deployments.get(SLASHER_PROXY_ID);
-  const DelegationManagerImplArtifact = await deployments.get(DELEGATION_MANAGER_IMPL_ID);
+  const DelegationControllerImplArtifact = await deployments.get(DELEGATION_MANAGER_IMPL_ID);
   const StrategyManagerImplArtifact = await deployments.get(STRATEGY_MANAGER_IMPL_ID);
   const SlasherImplArtifact = await deployments.get(SLASHER_IMPL_ID);
 
-  const ifaceDelegation = new ethers.utils.Interface(DelegationManagerImplArtifact.abi);
+  const ifaceDelegation = new ethers.utils.Interface(DelegationControllerImplArtifact.abi);
   const ifaceStrategy = new ethers.utils.Interface(StrategyManagerImplArtifact.abi);
   const ifaceSlasher = new ethers.utils.Interface(SlasherImplArtifact.abi);
 
@@ -62,8 +62,8 @@ const func: DeployFunction = async function ({
     throw '[Deployment][Error] strategies withdrawalDeplays not match';
   }
 
-  const delegationManagerPausedStatus = getParamPerNetwork(
-    Configs.DelegationManagerPausedStatus,
+  const delegationControllerPausedStatus = getParamPerNetwork(
+    Configs.DelegationControllerPausedStatus,
     network
   );
 
@@ -71,28 +71,28 @@ const func: DeployFunction = async function ({
 
   await waitForTx(
     await proxyAdmin.upgradeAndCall(
-      DelegationManagerProxyArtifact.address,
-      DelegationManagerImplArtifact.address,
+      DelegationControllerProxyArtifact.address,
+      DelegationControllerImplArtifact.address,
       ifaceDelegation.encodeFunctionData('initialize', [
         wrappedTokenGatewayArtifact == null ? owner : deployer,
         pauserRegistryAddress,
-        delegationManagerPausedStatus,
+        delegationControllerPausedStatus,
         minWithdrawalDelay,
         strategies,
         withdrawalDelays,
       ])
     )
   );
-  console.log('[Deployment][INFO] Upgraded DelegationManager');
+  console.log('[Deployment][INFO] Upgraded DelegationController');
 
-  const delegationManagerInstance = await hre.ethers.getContractAt(
-    'DelegationManager',
-    DelegationManagerProxyArtifact.address
+  const delegationControllerInstance = await hre.ethers.getContractAt(
+    'DelegationController',
+    DelegationControllerProxyArtifact.address
   );
 
   if (wrappedTokenGatewayArtifact) {
     await waitForTx(
-      await delegationManagerInstance.updateWrappedTokenGateway(wrappedTokenGatewayArtifact.address)
+      await delegationControllerInstance.updateWrappedTokenGateway(wrappedTokenGatewayArtifact.address)
     );
     console.log(`[Deployment][INFO] Config gateway ${strategies}`);
   }

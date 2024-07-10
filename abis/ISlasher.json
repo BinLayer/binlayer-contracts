@@ -188,7 +188,7 @@
     "name": "delegation",
     "outputs": [
       {
-        "internalType": "contract IDelegationManager",
+        "internalType": "contract IDelegationController",
         "name": "",
         "type": "address"
       }

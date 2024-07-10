@@ -1,6 +1,6 @@
 import { task } from 'hardhat/config';
 import {
-  DelegationManager,
+  DelegationController,
   eNetwork,
   FORK,
   getContract,
@@ -34,10 +34,10 @@ task(`config-strategy`, `Config strategy`).setAction(async (_, hre) => {
     'StrategyManager',
     StrategyManagerProxyArtifact.address
   );
-  const DelegationManagerProxyArtifact = await hre.deployments.get(DELEGATION_MANAGER_PROXY_ID);
-  const delegationManagerInstance = await hre.ethers.getContractAt(
-    'DelegationManager',
-    DelegationManagerProxyArtifact.address
+  const DelegationControllerProxyArtifact = await hre.deployments.get(DELEGATION_MANAGER_PROXY_ID);
+  const delegationControllerInstance = await hre.ethers.getContractAt(
+    'DelegationController',
+    DelegationControllerProxyArtifact.address
   );
   const StrategyProxyArtifact = await hre.deployments.get(`slisBNB${STRATEGY_PROXY_ID}`);
   const strategyInstance = await hre.ethers.getContractAt(
@@ -52,7 +52,7 @@ task(`config-strategy`, `Config strategy`).setAction(async (_, hre) => {
     )
   );
   await waitForTx(
-    await delegationManagerInstance.setStrategyWithdrawalDelay(
+    await delegationControllerInstance.setStrategyWithdrawalDelay(
       [StrategyProxyArtifact.address],
       [180]
     )
@@ -66,7 +66,7 @@ task(`config-strategy`, `Config strategy`).setAction(async (_, hre) => {
   console.log(
     await strategyManagerInstance.strategyIsWhitelistedForDeposit(strategyInstance.address)
   );
-  console.log(await delegationManagerInstance.strategyWithdrawalDelay(strategyInstance.address));
-  console.log(await delegationManagerInstance.getWithdrawalDelay([strategyInstance.address]));
-  console.log(await delegationManagerInstance.minWithdrawalDelay());
+  console.log(await delegationControllerInstance.strategyWithdrawalDelay(strategyInstance.address));
+  console.log(await delegationControllerInstance.getWithdrawalDelay([strategyInstance.address]));
+  console.log(await delegationControllerInstance.minWithdrawalDelay());
 });

@@ -2,7 +2,7 @@ import { FORK } from './../../helpers/hardhat-config-helpers';
 import { task } from 'hardhat/config';
 import { getContract, waitForTx } from '../../helpers/utilities/tx';
 import { exit } from 'process';
-import { DelegationManager, eNetwork, Slasher, StrategyManager } from '../../helpers';
+import { DelegationController, eNetwork, Slasher, StrategyManager } from '../../helpers';
 import { getParamPerNetwork } from '../../helpers/config-helpers';
 import { Configs } from '../../helpers/config';
 import {
@@ -42,8 +42,8 @@ task(`transfer-protocol-ownership`, `Transfer the ownership of protocol from dep
         await getContract(STRATEGY_MANAGER_PROXY_ID)
       ).address
     );
-    const delegationManager = await hre.ethers.getContractAt(
-      'DelegationManager',
+    const delegationController = await hre.ethers.getContractAt(
+      'DelegationController',
       (
         await getContract(DELEGATION_MANAGER_PROXY_ID)
       ).address
@@ -61,10 +61,10 @@ task(`transfer-protocol-ownership`, `Transfer the ownership of protocol from dep
       console.log('- Transfered of ProxyAdmin');
     }
 
-    const delegationManagerOwner = await delegationManager.owner();
-    if (delegationManagerOwner === deployer) {
-      await waitForTx(await delegationManager.transferOwnership(owner));
-      console.log('- Transfered of DelegationManager');
+    const delegationControllerOwner = await delegationController.owner();
+    if (delegationControllerOwner === deployer) {
+      await waitForTx(await delegationController.transferOwnership(owner));
+      console.log('- Transfered of DelegationController.sol');
     }
 
     const strategyManagerOwner = await strategyManager.owner();
@@ -81,9 +81,9 @@ task(`transfer-protocol-ownership`, `Transfer the ownership of protocol from dep
         assert: (await proxyAdmin.owner()) === owner,
       },
       {
-        role: 'DelegationManager owner',
-        address: await delegationManager.owner(),
-        assert: (await delegationManager.owner()) === owner,
+        role: 'DelegationController.sol owner',
+        address: await delegationController.owner(),
+        assert: (await delegationController.owner()) === owner,
       },
       {
         role: 'StrategyManager owner',

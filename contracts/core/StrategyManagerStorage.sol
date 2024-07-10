@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import '../interfaces/IStrategyManager.sol';
 import '../interfaces/IStrategy.sol';
-import '../interfaces/IDelegationManager.sol';
+import '../interfaces/IDelegationController.sol';
 import '../interfaces/ISlasher.sol';
 
 /**
@@ -20,7 +20,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
   uint8 internal constant MAX_STAKER_STRATEGY_LIST_LENGTH = 32;
 
   // system contracts
-  IDelegationManager public immutable delegation;
+  IDelegationController public immutable delegation;
   ISlasher public immutable slasher;
 
   /**
@@ -47,7 +47,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
    */
   mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
 
-  constructor(IDelegationManager _delegation, ISlasher _slasher) {
+  constructor(IDelegationController _delegation, ISlasher _slasher) {
     delegation = _delegation;
     slasher = _slasher;
   }

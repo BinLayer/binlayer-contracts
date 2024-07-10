@@ -5,7 +5,7 @@ import { MAX_UINT_AMOUNT, ONE_ADDRESS, ONE_HOUR, ZERO_ADDRESS } from '../helpers
 import { parseUnits } from 'ethers/lib/utils';
 import TransparentUpgradeableProxy from './build/TransparentUpgradeableProxy.json';
 import ProxyAdminArtifact from './build/ProxyAdmin.json';
-import DelegationManagerABI from '../abis/DelegationManager.json';
+import DelegationControllerABI from '../abis/DelegationController.json';
 import StrategyManagerABI from '../abis/StrategyManager.json';
 
 describe('StrategyManager', () => {
@@ -34,23 +34,23 @@ describe('StrategyManager', () => {
       proxyAdmin.address,
       '0x'
     );
-    const DelegationManagerProxy = await ethers.getContractFactory(
+    const DelegationControllerProxy = await ethers.getContractFactory(
       TransparentUpgradeableProxy.abi,
       TransparentUpgradeableProxy.bytecode
     );
-    let delegationManagerProxy = await DelegationManagerProxy.deploy(
+    let delegationControllerProxy = await DelegationControllerProxy.deploy(
       emptyContract.address,
       proxyAdmin.address,
       '0x'
     );
-    const DelegationManager = await ethers.getContractFactory('DelegationManager');
-    const delegationManager = await DelegationManager.deploy(
+    const DelegationController = await ethers.getContractFactory('DelegationController');
+    const delegationController = await DelegationController.deploy(
       strategyManagerProxy.address,
       slasherProxy.address
     );
     const StrategyManager = await ethers.getContractFactory('StrategyManager');
     const strategyManager = await StrategyManager.deploy(
-      delegationManagerProxy.address,
+      delegationControllerProxy.address,
       slasherProxy.address
     );
 
@@ -61,10 +61,10 @@ describe('StrategyManager', () => {
       { constructorArgs: [strategyManagerProxy.address] }
     );
 
-    const ifaceDelegation = new ethers.utils.Interface(DelegationManagerABI);
+    const ifaceDelegation = new ethers.utils.Interface(DelegationControllerABI);
     await proxyAdmin.upgradeAndCall(
-      delegationManagerProxy.address,
-      delegationManager.address,
+      delegationControllerProxy.address,
+      delegationController.address,
       ifaceDelegation.encodeFunctionData('initialize', [
         owner.address,
         pauserRegistry.address,
@@ -89,9 +89,9 @@ describe('StrategyManager', () => {
       'StrategyManager',
       strategyManagerProxy.address
     );
-    delegationManagerProxy = await ethers.getContractAt(
-      'DelegationManager',
-      delegationManagerProxy.address
+    delegationControllerProxy = await ethers.getContractAt(
+      'DelegationController',
+      delegationControllerProxy.address
     );
     return {
       owner,
@@ -102,7 +102,7 @@ describe('StrategyManager', () => {
       pauserRegistry,
       strategy,
       strategyManagerProxy,
-      delegationManagerProxy,
+      delegationControllerProxy,
     };
   }
 

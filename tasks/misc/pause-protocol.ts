@@ -2,7 +2,7 @@ import { FORK } from '../../helpers/hardhat-config-helpers';
 import { task } from 'hardhat/config';
 import { getContract, waitForTx } from '../../helpers/utilities/tx';
 import { exit } from 'process';
-import { DelegationManager, eNetwork, Slasher, StrategyManager } from '../../helpers';
+import { DelegationController, eNetwork, Slasher, StrategyManager } from '../../helpers';
 import { getParamPerNetwork } from '../../helpers/config-helpers';
 import { Configs } from '../../helpers/config';
 import {
@@ -26,8 +26,8 @@ task(`pause-protocol`, `Pause protocol`).setAction(async (_, hre) => {
       await getContract(STRATEGY_MANAGER_PROXY_ID)
     ).address
   );
-  const delegationManager = await hre.ethers.getContractAt(
-    'DelegationManager',
+  const delegationController = await hre.ethers.getContractAt(
+    'DelegationController',
     (
       await getContract(DELEGATION_MANAGER_PROXY_ID)
     ).address
@@ -39,15 +39,15 @@ task(`pause-protocol`, `Pause protocol`).setAction(async (_, hre) => {
     ).address
   );
 
-  console.log('Previous status: ', await delegationManager['paused(uint8)'](0));
-  console.log('Previous status: ', await delegationManager['paused(uint8)'](1));
-  console.log('Previous status: ', await delegationManager['paused(uint8)'](2));
+  console.log('Previous status: ', await delegationController['paused(uint8)'](0));
+  console.log('Previous status: ', await delegationController['paused(uint8)'](1));
+  console.log('Previous status: ', await delegationController['paused(uint8)'](2));
 
-  await waitForTx(await delegationManager.pause(1));
+  await waitForTx(await delegationController.pause(1));
 
-  console.log('After status: ', await delegationManager['paused(uint8)'](0));
-  console.log('After status: ', await delegationManager['paused(uint8)'](1));
-  console.log('After status: ', await delegationManager['paused(uint8)'](2));
+  console.log('After status: ', await delegationController['paused(uint8)'](0));
+  console.log('After status: ', await delegationController['paused(uint8)'](1));
+  console.log('After status: ', await delegationController['paused(uint8)'](2));
 
   return;
 });

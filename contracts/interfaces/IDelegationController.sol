@@ -6,14 +6,14 @@ import './ISignatureUtils.sol';
 import './IStrategyManager.sol';
 
 /**
- * @title DelegationManager
+ * @title DelegationController
  * @notice  This is the contract for delegation in BinLayer. The main functionalities of this contract are
  * - enabling anyone to register as an operator in BinLayer
  * - allowing operators to specify parameters related to stakers who delegate to them
  * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
-interface IDelegationManager is ISignatureUtils {
+interface IDelegationController is ISignatureUtils {
   // @notice Struct used for storing information about a single operator who has registered with BinLayer
   struct OperatorDetails {
     // @notice address to receive the rewards that the operator earns via serving applications built on BinLayer.

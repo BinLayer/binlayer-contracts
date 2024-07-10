@@ -56,7 +56,7 @@ export const Configs: IConfiguration = {
     [eBscNetwork.bscTestnet]: 0,
     [eBscNetwork.bsc]: 0,
   },
-  DelegationManagerPausedStatus: {
+  DelegationControllerPausedStatus: {
     [eBscNetwork.bscTestnet]: 1,
     [eBscNetwork.bsc]: 1,
   },

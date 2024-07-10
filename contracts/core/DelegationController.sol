@@ -6,17 +6,17 @@ import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol';
 import '../permissions/Pausable.sol';
 import '../libraries/EIP1271SignatureUtils.sol';
-import './DelegationManagerStorage.sol';
+import './DelegationControllerStorage.sol';
 
 /**
- * @title DelegationManager
+ * @title DelegationController.sol
  * @notice  This is the contract for delegation in BinLayer. The main functionalities of this contract are
  * - enabling anyone to register as an operator in BinLayer
  * - allowing operators to specify parameters related to stakers who delegate to them
  * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
-contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage, ReentrancyGuardUpgradeable {
+contract DelegationController is Initializable, OwnableUpgradeable, Pausable, DelegationControllerStorage, ReentrancyGuardUpgradeable {
   // @dev Index for flag that pauses new delegations when set
   uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
@@ -34,7 +34,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
   // @notice Simple permission for functions that are only callable by the StrategyManager contract
   modifier onlyStrategyManager() {
-    require(msg.sender == address(strategyManager), 'DelegationManager: onlyStrategyManager');
+    require(msg.sender == address(strategyManager), 'DelegationController: onlyStrategyManager');
     _;
   }
 
@@ -45,7 +45,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
   /**
    * @dev Initializes the immutable addresses of the strategy mananger and slasher.
    */
-  constructor(IStrategyManager _strategyManager, ISlasher _slasher) DelegationManagerStorage(_strategyManager, _slasher) {
+  constructor(IStrategyManager _strategyManager, ISlasher _slasher) DelegationControllerStorage(_strategyManager, _slasher) {
     _disableInitializers();
     ORIGINAL_CHAIN_ID = block.chainid;
   }
@@ -86,7 +86,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
   function registerAsOperator(OperatorDetails calldata registeringOperatorDetails, string calldata metadataURI) external {
     require(
       _operatorDetails[msg.sender].earningsReceiver == address(0),
-      'DelegationManager.registerAsOperator: operator has already registered'
+      'DelegationController.registerAsOperator: operator has already registered'
     );
     _setOperatorDetails(msg.sender, registeringOperatorDetails);
     SignatureWithExpiry memory emptySignatureAndExpiry;
@@ -105,7 +105,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
    * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
    */
   function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external {
-    require(isOperator(msg.sender), 'DelegationManager.modifyOperatorDetails: caller must be an operator');
+    require(isOperator(msg.sender), 'DelegationController.modifyOperatorDetails: caller must be an operator');
     _setOperatorDetails(msg.sender, newOperatorDetails);
   }
 
@@ -114,7 +114,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
    * @param metadataURI The URI for metadata associated with an operator
    */
   function updateOperatorMetadataURI(string calldata metadataURI) external {
-    require(isOperator(msg.sender), 'DelegationManager.updateOperatorMetadataURI: caller must be an operator');
+    require(isOperator(msg.sender), 'DelegationController.updateOperatorMetadataURI: caller must be an operator');
     emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
   }
 
@@ -161,7 +161,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     bytes32 approverSalt
   ) external {
     // check the signature expiry
-    require(stakerSignatureAndExpiry.expiry >= block.timestamp, 'DelegationManager.delegateToBySignature: staker signature expired');
+    require(stakerSignatureAndExpiry.expiry >= block.timestamp, 'DelegationController.delegateToBySignature: staker signature expired');
 
     // calculate the digest hash, then increment `staker`'s nonce
     uint256 currentStakerNonce = stakerNonce[staker];
@@ -183,13 +183,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
    * both the staker and operator, and places the shares and strategies in the withdrawal queue
    */
   function undelegate(address staker) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
-    require(isDelegated(staker), 'DelegationManager.undelegate: staker must be delegated to undelegate');
-    require(!isOperator(staker), 'DelegationManager.undelegate: operators cannot be undelegated');
-    require(staker != address(0), 'DelegationManager.undelegate: cannot undelegate zero address');
+    require(isDelegated(staker), 'DelegationController.undelegate: staker must be delegated to undelegate');
+    require(!isOperator(staker), 'DelegationController.undelegate: operators cannot be undelegated');
+    require(staker != address(0), 'DelegationController.undelegate: cannot undelegate zero address');
     address operator = delegatedTo[staker];
     require(
       msg.sender == staker || msg.sender == operator || msg.sender == _operatorDetails[operator].delegationApprover,
-      'DelegationManager.undelegate: caller cannot undelegate staker'
+      'DelegationController.undelegate: caller cannot undelegate staker'
     );
 
     // Gather strategies and shares to remove from staker/operator during undelegation
@@ -245,11 +245,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
       require(
         queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length,
-        'DelegationManager.queueWithdrawal: input length mismatch'
+        'DelegationController.queueWithdrawal: input length mismatch'
       );
       require(
         queuedWithdrawalParams[i].withdrawer == msg.sender || queuedWithdrawalParams[i].withdrawer == wrappedTokenGateway,
-        'DelegationManager.queueWithdrawal: withdrawer must be staker or wrapped token gateway'
+        'DelegationController.queueWithdrawal: withdrawer must be staker or wrapped token gateway'
       );
 
       // Remove shares from staker's strategies and place strategies/shares in queue.
@@ -389,15 +389,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
   function _setOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) internal {
     require(
       newOperatorDetails.earningsReceiver != address(0),
-      'DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address'
+      'DelegationController._setOperatorDetails: cannot set `earningsReceiver` to zero address'
     );
     require(
       newOperatorDetails.stakerOptOutWindow <= MAX_STAKER_OPT_OUT_WINDOW,
-      'DelegationManager._setOperatorDetails: stakerOptOutWindow cannot be > MAX_STAKER_OPT_OUT_WINDOW'
+      'DelegationController._setOperatorDetails: stakerOptOutWindow cannot be > MAX_STAKER_OPT_OUT_WINDOW'
     );
     require(
       newOperatorDetails.stakerOptOutWindow >= _operatorDetails[operator].stakerOptOutWindow,
-      'DelegationManager._setOperatorDetails: stakerOptOutWindow cannot be decreased'
+      'DelegationController._setOperatorDetails: stakerOptOutWindow cannot be decreased'
     );
     _operatorDetails[operator] = newOperatorDetails;
     emit OperatorDetailsModified(msg.sender, newOperatorDetails);
@@ -420,8 +420,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     SignatureWithExpiry memory approverSignatureAndExpiry,
     bytes32 approverSalt
   ) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
-    require(!isDelegated(staker), 'DelegationManager._delegate: staker is already actively delegated');
-    require(isOperator(operator), 'DelegationManager._delegate: operator is not registered in BinLayer');
+    require(!isDelegated(staker), 'DelegationController._delegate: staker is already actively delegated');
+    require(isOperator(operator), 'DelegationController._delegate: operator is not registered in BinLayer');
 
     // fetch the operator's `delegationApprover` address and store it in memory in case we need to use it multiple times
     address _delegationApprover = _operatorDetails[operator].delegationApprover;
@@ -432,9 +432,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     if (_delegationApprover != address(0) && msg.sender != _delegationApprover && msg.sender != operator) {
       // check the signature expiry
-      require(approverSignatureAndExpiry.expiry >= block.timestamp, 'DelegationManager._delegate: approver signature expired');
+      require(approverSignatureAndExpiry.expiry >= block.timestamp, 'DelegationController._delegate: approver signature expired');
       // check that the salt hasn't been used previously, then mark the salt as spent
-      require(!delegationApproverSaltIsSpent[_delegationApprover][approverSalt], 'DelegationManager._delegate: approverSalt already spent');
+      require(!delegationApproverSaltIsSpent[_delegationApprover][approverSalt], 'DelegationController._delegate: approverSalt already spent');
       delegationApproverSaltIsSpent[_delegationApprover][approverSalt] = true;
 
       // calculate the digest hash
@@ -477,17 +477,17 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
   ) internal {
     bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
-    require(pendingWithdrawals[withdrawalRoot], 'DelegationManager._completeQueuedWithdrawal: action is not in queue');
+    require(pendingWithdrawals[withdrawalRoot], 'DelegationController._completeQueuedWithdrawal: action is not in queue');
 
     require(
       withdrawal.startTimestamp + minWithdrawalDelay <= block.timestamp,
-      'DelegationManager._completeQueuedWithdrawal: minWithdrawalDelay period has not yet passed'
+      'DelegationController._completeQueuedWithdrawal: minWithdrawalDelay period has not yet passed'
     );
 
-    require(msg.sender == withdrawal.withdrawer, 'DelegationManager._completeQueuedWithdrawal: only withdrawer can complete action');
+    require(msg.sender == withdrawal.withdrawer, 'DelegationController._completeQueuedWithdrawal: only withdrawer can complete action');
 
     if (receiveAsTokens) {
-      require(tokens.length == withdrawal.strategies.length, 'DelegationManager._completeQueuedWithdrawal: input length mismatch');
+      require(tokens.length == withdrawal.strategies.length, 'DelegationController._completeQueuedWithdrawal: input length mismatch');
     }
 
     // Remove `withdrawalRoot` from pending roots
@@ -499,7 +499,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
       for (uint256 i = 0; i < withdrawal.strategies.length; ) {
         require(
           withdrawal.startTimestamp + strategyWithdrawalDelay[withdrawal.strategies[i]] <= block.timestamp,
-          'DelegationManager._completeQueuedWithdrawal: withdrawalDelay period has not yet passed for this strategy'
+          'DelegationController._completeQueuedWithdrawal: withdrawalDelay period has not yet passed for this strategy'
         );
 
         _withdrawSharesAsTokens({
@@ -519,7 +519,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
       for (uint256 i = 0; i < withdrawal.strategies.length; ) {
         require(
           withdrawal.startTimestamp + strategyWithdrawalDelay[withdrawal.strategies[i]] <= block.timestamp,
-          'DelegationManager._completeQueuedWithdrawal: withdrawalDelay period has not yet passed for this strategy'
+          'DelegationController._completeQueuedWithdrawal: withdrawalDelay period has not yet passed for this strategy'
         );
 
         strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], withdrawal.shares[i]);
@@ -568,8 +568,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     IStrategy[] memory strategies,
     uint256[] memory shares
   ) internal returns (bytes32) {
-    require(staker != address(0), 'DelegationManager._removeSharesAndQueueWithdrawal: staker cannot be zero address');
-    require(strategies.length != 0, 'DelegationManager._removeSharesAndQueueWithdrawal: strategies cannot be empty');
+    require(staker != address(0), 'DelegationController._removeSharesAndQueueWithdrawal: staker cannot be zero address');
+    require(strategies.length != 0, 'DelegationController._removeSharesAndQueueWithdrawal: strategies cannot be empty');
 
     // Remove shares from staker and operator
     // Each of these operations fail if we attempt to remove more shares than exist
@@ -581,7 +581,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
       require(
         staker == withdrawer || !strategyManager.thirdPartyTransfersForbidden(strategies[i]),
-        'DelegationManager._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if thirdPartyTransfersForbidden are set'
+        'DelegationController._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if thirdPartyTransfersForbidden are set'
       );
       // this call will revert if `shares[i]` exceeds the Staker's current shares in `strategies[i]`
       strategyManager.removeShares(staker, strategies[i], shares[i]);
@@ -624,7 +624,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
   function _setMinWithdrawalDelay(uint256 _minWithdrawalDelay) internal {
     require(
       _minWithdrawalDelay <= MAX_WITHDRAWAL_DELAY,
-      'DelegationManager._setMinWithdrawalDelay: _minWithdrawalDelay cannot be > MAX_WITHDRAWAL_DELAY'
+      'DelegationController._setMinWithdrawalDelay: _minWithdrawalDelay cannot be > MAX_WITHDRAWAL_DELAY'
     );
     emit MinWithdrawalDelaySet(minWithdrawalDelay, _minWithdrawalDelay);
     minWithdrawalDelay = _minWithdrawalDelay;
@@ -635,7 +635,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
    * gets called when initializing contract or by calling `setStrategyWithdrawalDelay`
    */
   function _setStrategyWithdrawalDelay(IStrategy[] calldata _strategies, uint256[] calldata _withdrawalDelay) internal {
-    require(_strategies.length == _withdrawalDelay.length, 'DelegationManager._setStrategyWithdrawalDelay: input length mismatch');
+    require(_strategies.length == _withdrawalDelay.length, 'DelegationController._setStrategyWithdrawalDelay: input length mismatch');
     uint256 numStrats = _strategies.length;
     for (uint256 i = 0; i < numStrats; ++i) {
       IStrategy strategy = _strategies[i];
@@ -643,7 +643,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
       uint256 newStrategyWithdrawalDelay = _withdrawalDelay[i];
       require(
         newStrategyWithdrawalDelay <= MAX_WITHDRAWAL_DELAY,
-        'DelegationManager._setStrategyWithdrawalDelay: _withdrawalDelay cannot be > MAX_WITHDRAWAL_DELAY'
+        'DelegationController._setStrategyWithdrawalDelay: _withdrawalDelay cannot be > MAX_WITHDRAWAL_DELAY'
       );
 
       // set the new withdrawal delay

@@ -7,7 +7,7 @@ import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IWrappedToken} from '../interfaces/IWrappedToken.sol';
 import {IStrategy} from '../interfaces/IStrategy.sol';
 import {IStrategyManager} from '../interfaces/IStrategyManager.sol';
-import {IDelegationManager} from '../interfaces/IDelegationManager.sol';
+import {IDelegationController} from '../interfaces/IDelegationController.sol';
 import {IWrappedTokenGateway} from '../interfaces/IWrappedTokenGateway.sol';
 
 contract WrappedTokenGateway is IWrappedTokenGateway, Ownable {
@@ -16,19 +16,19 @@ contract WrappedTokenGateway is IWrappedTokenGateway, Ownable {
   IWrappedToken internal immutable wrappedToken;
   IStrategy internal immutable strategy;
   IStrategyManager internal immutable strategyManager;
-  IDelegationManager internal immutable delegationManager;
+  IDelegationController internal immutable delegationController;
 
   constructor(
     address _wrappedToken,
     address _owner,
     IStrategy _strategy,
     IStrategyManager _strategyManager,
-    IDelegationManager _delegationManager
+    IDelegationController _delegationController
   ) {
     wrappedToken = IWrappedToken(_wrappedToken);
     strategy = _strategy;
     strategyManager = _strategyManager;
-    delegationManager = _delegationManager;
+    delegationController = _delegationController;
     _transferOwnership(_owner);
     IWrappedToken(_wrappedToken).approve(address(strategyManager), type(uint256).max);
   }
@@ -39,7 +39,7 @@ contract WrappedTokenGateway is IWrappedTokenGateway, Ownable {
   }
 
   function withdrawNativeTokens(
-    IDelegationManager.Withdrawal[] calldata withdrawals,
+    IDelegationController.Withdrawal[] calldata withdrawals,
     IERC20[][] calldata tokens,
     uint256[] calldata middlewareTimesIndexs,
     bool[] calldata receiveAsTokens
@@ -51,7 +51,7 @@ contract WrappedTokenGateway is IWrappedTokenGateway, Ownable {
       }
     }
     uint256 beforeBalance = wrappedToken.balanceOf(address(this));
-    delegationManager.completeQueuedWithdrawals(withdrawals, tokens, middlewareTimesIndexs, receiveAsTokens);
+    delegationController.completeQueuedWithdrawals(withdrawals, tokens, middlewareTimesIndexs, receiveAsTokens);
     uint256 afterBalance = wrappedToken.balanceOf(address(this));
     uint256 amountToWithdraw = afterBalance - beforeBalance;
     wrappedToken.withdraw(amountToWithdraw);

@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import './IStrategy.sol';
 import './ISlasher.sol';
-import './IDelegationManager.sol';
+import './IDelegationController.sol';
 
 /**
  * @title Interface for the primary entrypoint for funds into BinLayer.
@@ -95,13 +95,13 @@ interface IStrategyManager {
     bytes memory signature
   ) external returns (uint256 shares);
 
-  /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
+  /// @notice Used by the DelegationController.sol to remove a Staker's shares from a particular strategy when entering the withdrawal queue
   function removeShares(address staker, IStrategy strategy, uint256 shares) external;
 
-  /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
+  /// @notice Used by the DelegationController.sol to award a Staker some shares that have passed through the withdrawal queue
   function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external;
 
-  /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
+  /// @notice Used by the DelegationController.sol to convert withdrawn shares to tokens and send them to a recipient
   function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external;
 
   /// @notice Returns the current shares of `user` in `strategy`
@@ -133,7 +133,7 @@ interface IStrategyManager {
   function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
 
   /// @notice Returns the single, central Delegation contract of BinLayer
-  function delegation() external view returns (IDelegationManager);
+  function delegation() external view returns (IDelegationController);
 
   /// @notice Returns the single, central Slasher contract of BinLayer
   function slasher() external view returns (ISlasher);

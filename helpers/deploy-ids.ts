@@ -1,12 +1,12 @@
 export const IMPL_ID = 'Implementation';
 export const PROXY_ID = 'Proxy';
 export const PAUSER_REGISTRY_ID = 'PauserRegistry';
-export const DELEGATION_MANAGER_PROXY_ID = `DelegationManager-${PROXY_ID}`;
+export const DELEGATION_CONTROLLER_PROXY_ID = `DelegationController-${PROXY_ID}`;
 export const SLASHER_PROXY_ID = `Slasher-${PROXY_ID}`;
-export const STRATEGY_MANAGER_PROXY_ID = `StrategyManager-${PROXY_ID}`;
-export const DELEGATION_MANAGER_IMPL_ID = `DelegationManager-${IMPL_ID}`;
+export const STRATEGY_CONTROLLER_PROXY_ID = `StrategyManager-${PROXY_ID}`;
+export const DELEGATION_CONTROLLER_IMPL_ID = `DelegationController-${IMPL_ID}`;
 export const SLASHER_IMPL_ID = `Slasher-${IMPL_ID}`;
-export const STRATEGY_MANAGER_IMPL_ID = `StrategyManager-${IMPL_ID}`;
+export const STRATEGY_CONTROLLER_IMPL_ID = `StrategyManager-${IMPL_ID}`;
 export const STRATEGY_IMPL_ID = `Strategy-${IMPL_ID}`;
 export const STRATEGY_PROXY_ID = `-Strategy-${PROXY_ID}`;
 export const EMPTY_CONTRANCT_ID = 'EmptyContract';
