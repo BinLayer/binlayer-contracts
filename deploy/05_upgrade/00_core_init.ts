@@ -3,15 +3,15 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { COMMON_DEPLOY_PARAMS } from '../../helpers/env';
 import { eNetwork, getContract, StrategyManager, waitForTx } from '../../helpers';
 import {
-  DELEGATION_MANAGER_IMPL_ID,
-  DELEGATION_MANAGER_PROXY_ID,
+  DELEGATION_CONTROLLER_IMPL_ID,
+  DELEGATION_CONTROLLER_PROXY_ID,
   EMPTY_CONTRANCT_ID,
   PAUSER_REGISTRY_ID,
   PROXY_ADMIN_ID,
   SLASHER_IMPL_ID,
   SLASHER_PROXY_ID,
-  STRATEGY_MANAGER_IMPL_ID,
-  STRATEGY_MANAGER_PROXY_ID,
+  STRATEGY_CONTROLLER_IMPL_ID,
+  STRATEGY_CONTROLLER_PROXY_ID,
   STRATEGY_PROXY_ID,
   WRAPPED_TOKEN_GATEWAY_ID,
 } from '../../helpers/deploy-ids';
@@ -31,11 +31,11 @@ const func: DeployFunction = async function ({
 
   const { address: pauserRegistryAddress } = await deployments.get(PAUSER_REGISTRY_ID);
 
-  const DelegationControllerProxyArtifact = await deployments.get(DELEGATION_MANAGER_PROXY_ID);
-  const StrategyManagerProxyArtifact = await deployments.get(STRATEGY_MANAGER_PROXY_ID);
+  const DelegationControllerProxyArtifact = await deployments.get(DELEGATION_CONTROLLER_PROXY_ID);
+  const StrategyManagerProxyArtifact = await deployments.get(STRATEGY_CONTROLLER_PROXY_ID);
   const SlasherProxyArtifact = await deployments.get(SLASHER_PROXY_ID);
-  const DelegationControllerImplArtifact = await deployments.get(DELEGATION_MANAGER_IMPL_ID);
-  const StrategyManagerImplArtifact = await deployments.get(STRATEGY_MANAGER_IMPL_ID);
+  const DelegationControllerImplArtifact = await deployments.get(DELEGATION_CONTROLLER_IMPL_ID);
+  const StrategyManagerImplArtifact = await deployments.get(STRATEGY_CONTROLLER_IMPL_ID);
   const SlasherImplArtifact = await deployments.get(SLASHER_IMPL_ID);
 
   const ifaceDelegation = new ethers.utils.Interface(DelegationControllerImplArtifact.abi);

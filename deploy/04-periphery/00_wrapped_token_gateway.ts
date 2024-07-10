@@ -3,7 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { COMMON_DEPLOY_PARAMS } from '../../helpers/env';
 import { eNetwork, FORK } from '../../helpers';
 import {
-  DELEGATION_MANAGER_PROXY_ID,
+  DELEGATION_CONTROLLER_PROXY_ID,
   EMPTY_CONTRANCT_ID,
   PROXY_ADMIN_ID,
   SLASHER_PROXY_ID,
@@ -38,7 +38,7 @@ const func: DeployFunction = async function ({
   }
 
   const { address: strategyManagerAddress } = await deployments.get(STRATEGY_MANAGER_PROXY_ID);
-  const { address: delegationControllerAddress } = await deployments.get(DELEGATION_MANAGER_PROXY_ID);
+  const { address: delegationControllerAddress } = await deployments.get(DELEGATION_CONTROLLER_PROXY_ID);
 
   await deploy(WRAPPED_TOKEN_GATEWAY_ID, {
     contract: 'WrappedTokenGateway',
