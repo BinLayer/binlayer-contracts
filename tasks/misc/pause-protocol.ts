@@ -6,7 +6,7 @@ import { DelegationController, eNetwork, Slasher, StrategyManager } from '../../
 import { getParamPerNetwork } from '../../helpers/config-helpers';
 import { Configs } from '../../helpers/config';
 import {
-  DELEGATION_MANAGER_PROXY_ID,
+  DELEGATION_CONTROLLER_PROXY_ID,
   PROXY_ADMIN_ID,
   SLASHER_PROXY_ID,
   STRATEGY_MANAGER_IMPL_ID,
@@ -29,7 +29,7 @@ task(`pause-protocol`, `Pause protocol`).setAction(async (_, hre) => {
   const delegationController = await hre.ethers.getContractAt(
     'DelegationController',
     (
-      await getContract(DELEGATION_MANAGER_PROXY_ID)
+      await getContract(DELEGATION_CONTROLLER_PROXY_ID)
     ).address
   );
   const slasherManager = await hre.ethers.getContractAt(

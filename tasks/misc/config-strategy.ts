@@ -10,8 +10,8 @@ import {
   ZERO_ADDRESS,
 } from '../../helpers';
 import {
-  DELEGATION_MANAGER_IMPL_ID,
-  DELEGATION_MANAGER_PROXY_ID,
+  DELEGATION_CONTROLLER_IMPL_ID,
+  DELEGATION_CONTROLLER_PROXY_ID,
   PAUSER_REGISTRY_ID,
   PROXY_ADMIN_ID,
   SLASHER_PROXY_ID,
@@ -34,7 +34,7 @@ task(`config-strategy`, `Config strategy`).setAction(async (_, hre) => {
     'StrategyManager',
     StrategyManagerProxyArtifact.address
   );
-  const DelegationControllerProxyArtifact = await hre.deployments.get(DELEGATION_MANAGER_PROXY_ID);
+  const DelegationControllerProxyArtifact = await hre.deployments.get(DELEGATION_CONTROLLER_PROXY_ID);
   const delegationControllerInstance = await hre.ethers.getContractAt(
     'DelegationController',
     DelegationControllerProxyArtifact.address
