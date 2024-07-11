@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: LGPL-3.0
 pragma solidity 0.8.20;
 
-import '../interfaces/IStrategyManager.sol';
-import '../interfaces/IStrategy.sol';
+import '../interfaces/IPoolController.sol';
+import '../interfaces/IPool.sol';
 import '../interfaces/IDelegationController.sol';
 import '../interfaces/ISlasher.sol';
 
 /**
- * @title Storage variables for the `StrategyManager` contract.
+ * @title Storage variables for the `PoolController.sol` contract.
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
-abstract contract StrategyManagerStorage is IStrategyManager {
+abstract contract PoolControllerStorage is IPoolController {
   /// @notice The EIP-712 typehash for the contract's domain
   bytes32 public constant DOMAIN_TYPEHASH = keccak256('EIP712Domain(string name,uint256 chainId,address verifyingContract)');
   /// @notice The EIP-712 typehash for the deposit struct used by the contract
   bytes32 public constant DEPOSIT_TYPEHASH =
-    keccak256('Deposit(address staker,address strategy,address token,uint256 amount,uint256 nonce,uint256 expiry)');
-  // maximum length of dynamic arrays in `stakerStrategyList` mapping, for sanity's sake
+    keccak256('Deposit(address staker,address pool,address token,uint256 amount,uint256 nonce,uint256 expiry)');
+  // maximum length of dynamic arrays in `stakerPoolList` mapping, for sanity's sake
   uint8 internal constant MAX_STAKER_STRATEGY_LIST_LENGTH = 32;
 
   // system contracts
@@ -29,23 +29,23 @@ abstract contract StrategyManagerStorage is IStrategyManager {
    * Use the getter function `domainSeparator` to get the current domain separator for this contract.
    */
   bytes32 internal _DOMAIN_SEPARATOR;
-  // staker => number of signed deposit nonce (used in depositIntoStrategyWithSignature)
+  // staker => number of signed deposit nonce (used in depositIntoPoolWithSignature)
   mapping(address => uint256) public nonces;
-  /// @notice Permissioned role, which can be changed by the contract owner. Has the ability to edit the strategy whitelist
-  address public strategyWhitelister;
-  /// @notice Mapping: staker => Strategy => number of shares which they currently hold
-  mapping(address => mapping(IStrategy => uint256)) public stakerStrategyShares;
+  /// @notice Permissioned role, which can be changed by the contract owner. Has the ability to edit the pool whitelist
+  address public poolWhitelister;
+  /// @notice Mapping: staker => Pool => number of shares which they currently hold
+  mapping(address => mapping(IPool => uint256)) public stakerPoolShares;
   /// @notice Mapping: staker => array of strategies in which they have nonzero shares
-  mapping(address => IStrategy[]) public stakerStrategyList;
-  /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
-  mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
+  mapping(address => IPool[]) public stakerPoolList;
+  /// @notice Mapping: pool => whether or not stakers are allowed to deposit into it
+  mapping(IPool => bool) public poolIsWhitelistedForDeposit;
 
   /**
-   * @notice Mapping: strategy => whether or not stakers are allowed to transfer strategy shares to another address
-   * if true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
+   * @notice Mapping: pool => whether or not stakers are allowed to transfer pool shares to another address
+   * if true for a pool, a user cannot depositIntoPoolWithSignature into that pool for another staker
    * and also when performing queueWithdrawals, a staker can only withdraw to themselves
    */
-  mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
+  mapping(IPool => bool) public thirdPartyTransfersForbidden;
 
   constructor(IDelegationController _delegation, ISlasher _slasher) {
     delegation = _delegation;

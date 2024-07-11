@@ -1,9 +1,0 @@
-[
-  {
-    "inputs": [],
-    "name": "depositNativeToken",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  }
-]

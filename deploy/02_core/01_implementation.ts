@@ -9,8 +9,8 @@ import {
   PROXY_ADMIN_ID,
   SLASHER_IMPL_ID,
   SLASHER_PROXY_ID,
-  STRATEGY_CONTROLLER_IMPL_ID,
-  STRATEGY_CONTROLLER_PROXY_ID,
+  POOL_CONTROLLER_IMPL_ID,
+  POOL_CONTROLLER_PROXY_ID,
 } from '../../helpers/deploy-ids';
 
 const func: DeployFunction = async function ({
@@ -22,19 +22,19 @@ const func: DeployFunction = async function ({
   const { deployer } = await getNamedAccounts();
 
   const DelegationControllerProxyArtifact = await deployments.get(DELEGATION_CONTROLLER_PROXY_ID);
-  const StrategyManagerProxyArtifact = await deployments.get(STRATEGY_CONTROLLER_PROXY_ID);
+  const PoolControllerProxyArtifact = await deployments.get(POOL_CONTROLLER_PROXY_ID);
   const SlasherProxyArtifact = await deployments.get(SLASHER_PROXY_ID);
 
   await deploy(DELEGATION_CONTROLLER_IMPL_ID, {
     from: deployer,
     contract: 'DelegationController',
-    args: [StrategyManagerProxyArtifact.address, SlasherProxyArtifact.address],
+    args: [PoolControllerProxyArtifact.address, SlasherProxyArtifact.address],
     ...COMMON_DEPLOY_PARAMS,
   });
 
-  await deploy(STRATEGY_CONTROLLER_IMPL_ID, {
+  await deploy(POOL_CONTROLLER_IMPL_ID, {
     from: deployer,
-    contract: 'StrategyManager',
+    contract: 'PoolController',
     args: [DelegationControllerProxyArtifact.address, SlasherProxyArtifact.address],
     ...COMMON_DEPLOY_PARAMS,
   });
@@ -42,7 +42,7 @@ const func: DeployFunction = async function ({
   await deploy(SLASHER_IMPL_ID, {
     from: deployer,
     contract: 'Slasher',
-    args: [StrategyManagerProxyArtifact.address, DelegationControllerProxyArtifact.address],
+    args: [PoolControllerProxyArtifact.address, DelegationControllerProxyArtifact.address],
     ...COMMON_DEPLOY_PARAMS,
   });
 

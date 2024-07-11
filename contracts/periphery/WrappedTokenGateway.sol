@@ -5,8 +5,8 @@ import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {IWrappedToken} from '../interfaces/IWrappedToken.sol';
-import {IStrategy} from '../interfaces/IStrategy.sol';
-import {IStrategyManager} from '../interfaces/IStrategyManager.sol';
+import {IPool} from '../interfaces/IPool.sol';
+import {IPoolController} from '../interfaces/IPoolController.sol';
 import {IDelegationController} from '../interfaces/IDelegationController.sol';
 import {IWrappedTokenGateway} from '../interfaces/IWrappedTokenGateway.sol';
 
@@ -14,28 +14,28 @@ contract WrappedTokenGateway is IWrappedTokenGateway, Ownable {
   using SafeERC20 for IERC20;
 
   IWrappedToken internal immutable wrappedToken;
-  IStrategy internal immutable strategy;
-  IStrategyManager internal immutable strategyManager;
+  IPool internal immutable pool;
+  IPoolController internal immutable poolController;
   IDelegationController internal immutable delegationController;
 
   constructor(
     address _wrappedToken,
     address _owner,
-    IStrategy _strategy,
-    IStrategyManager _strategyManager,
+    IPool _pool,
+    IPoolController _poolController,
     IDelegationController _delegationController
   ) {
     wrappedToken = IWrappedToken(_wrappedToken);
-    strategy = _strategy;
-    strategyManager = _strategyManager;
+    pool = _pool;
+    poolController = _poolController;
     delegationController = _delegationController;
     _transferOwnership(_owner);
-    IWrappedToken(_wrappedToken).approve(address(strategyManager), type(uint256).max);
+    IWrappedToken(_wrappedToken).approve(address(poolController), type(uint256).max);
   }
 
   function depositNativeToken(address staker) external payable {
     wrappedToken.deposit{value: msg.value}();
-    strategyManager.depositIntoStrategyWithStaker(staker, strategy, IERC20(address(wrappedToken)), msg.value);
+    poolController.depositIntoPoolWithStaker(staker, pool, IERC20(address(wrappedToken)), msg.value);
   }
 
   function withdrawNativeTokens(
@@ -46,8 +46,8 @@ contract WrappedTokenGateway is IWrappedTokenGateway, Ownable {
   ) external {
     for (uint256 i = 0; i < withdrawals.length; i++) {
       require(withdrawals[i].staker == msg.sender, 'Withdrawer must be staker');
-      for (uint256 j = 0; j < withdrawals[i].strategies.length; j++) {
-        require(withdrawals[i].strategies[j] == strategy, 'Only support wrapped token strategy');
+      for (uint256 j = 0; j < withdrawals[i].pools.length; j++) {
+        require(withdrawals[i].pools[j] == pool, 'Only support wrapped token pool');
       }
     }
     uint256 beforeBalance = wrappedToken.balanceOf(address(this));
@@ -97,10 +97,10 @@ contract WrappedTokenGateway is IWrappedTokenGateway, Ownable {
   }
 
   /**
-   * @dev Get WrappedToken strategy address used by WrappedTokenGateway
+   * @dev Get WrappedToken pool address used by WrappedTokenGateway
    */
-  function getStrategyAddress() external view returns (address) {
-    return address(strategy);
+  function getPoolAddress() external view returns (address) {
+    return address(pool);
   }
 
   /**

@@ -7,7 +7,7 @@ import {
   EMPTY_CONTRANCT_ID,
   PROXY_ADMIN_ID,
   SLASHER_PROXY_ID,
-  STRATEGY_CONTROLLER_PROXY_ID,
+  POOL_CONTROLLER_PROXY_ID,
 } from '../../helpers/deploy-ids';
 
 const func: DeployFunction = async function ({
@@ -22,7 +22,7 @@ const func: DeployFunction = async function ({
 
   const ProxyAdminArtifact = await deployments.get(PROXY_ADMIN_ID);
 
-  await deploy(STRATEGY_CONTROLLER_PROXY_ID, {
+  await deploy(POOL_CONTROLLER_PROXY_ID, {
     from: deployer,
     contract: 'TransparentUpgradeableProxy',
     args: [EmptyArtifact.address, ProxyAdminArtifact.address, '0x'],

@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import '../interfaces/ISlasher.sol';
 import '../interfaces/IDelegationController.sol';
-import '../interfaces/IStrategyManager.sol';
+import '../interfaces/IPoolController.sol';
 import '../libraries/StructuredLinkedList.sol';
 import '../permissions/Pausable.sol';
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
@@ -13,7 +13,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
  * @notice This contract is not in use as of the BinLayer release.
  */
 contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
-  constructor(IStrategyManager, IDelegationController) {}
+  constructor(IPoolController, IDelegationController) {}
 
   function initialize(address, IPauserRegistry, uint256) external {}
 
@@ -29,7 +29,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
   function recordLastStakeUpdateAndRevokeSlashingAbility(address, uint32) external {}
 
-  function strategyManager() external view returns (IStrategyManager) {}
+  function poolController() external view returns (IPoolController) {}
 
   function delegation() external view returns (IDelegationController) {}
 

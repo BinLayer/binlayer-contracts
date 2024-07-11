@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0
 pragma solidity 0.8.20;
 
-import './StrategyBase.sol';
+import './PoolBase.sol';
 
 /**
- * @title A Strategy implementation inheriting from `StrategyBase` that limits the total amount of deposits it will accept.
+ * @title A Pool implementation inheriting from `PoolBase.sol` that limits the total amount of deposits it will accept.
  * @dev Note that this implementation still converts between any amount of shares or underlying tokens in its view functions;
  * these functions purposefully do not take the TVL limit into account.
  */
-contract StrategyBaseTVLLimits is StrategyBase {
+contract PoolBaseTVLLimits is PoolBase {
   /// The maximum deposit (in underlyingToken) that this strategy will accept per deposit
   uint256 public maxPerDeposit;
 
@@ -23,7 +23,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
 
   /// solhint-disable-next-line no-empty-blocks
   /// @custom:oz-upgrades-unsafe-allow constructor
-  constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
+  constructor(IPoolController _strategyManager) PoolBase(_strategyManager) {}
 
   function initialize(
     uint256 _maxPerDeposit,
@@ -32,7 +32,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
     IPauserRegistry _pauserRegistry
   ) public virtual initializer {
     _setTVLLimits(_maxPerDeposit, _maxTotalDeposits);
-    _initializeStrategyBase(_underlyingToken, _pauserRegistry);
+    _initializePoolBase(_underlyingToken, _pauserRegistry);
   }
 
   /**
@@ -55,7 +55,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
   function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) internal {
     emit MaxPerDepositUpdated(maxPerDeposit, newMaxPerDeposit);
     emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
-    require(newMaxPerDeposit <= newMaxTotalDeposits, 'StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits');
+    require(newMaxPerDeposit <= newMaxTotalDeposits, 'PoolBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits');
     maxPerDeposit = newMaxPerDeposit;
     maxTotalDeposits = newMaxTotalDeposits;
   }
@@ -64,17 +64,17 @@ contract StrategyBaseTVLLimits is StrategyBase {
    * @notice Called in the external `deposit` function, before any logic is executed. Makes sure that deposits don't exceed configured maximum.
    * @dev Unused token param is the token being deposited. This is already checked in the `deposit` function.
    * @dev Note that the `maxTotalDeposits` is purely checked against the current `_tokenBalance()`, since by this point in the deposit flow, the
-   * tokens should have already been transferred to this Strategy by the StrategyManager
+   * tokens should have already been transferred to this Pool by the PoolController.sol
    * @dev We note as well that this makes it possible for various race conditions to occur:
    * a) multiple simultaneous calls to `deposit` may result in some of these calls reverting due to `maxTotalDeposits` being reached.
-   * b) transferring funds directly to this Strategy (although not generally in someone's economic self interest) in order to reach `maxTotalDeposits`
+   * b) transferring funds directly to this Pool (although not generally in someone's economic self interest) in order to reach `maxTotalDeposits`
    * is a route by which someone can cause calls to `deposit` to revert.
    * c) increases in the token balance of this contract through other effects – including token rebasing – may cause similar issues to (a) and (b).
    * @param amount The amount of `token` being deposited
    */
   function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
-    require(amount <= maxPerDeposit, 'StrategyBaseTVLLimits: max per deposit exceeded');
-    require(_tokenBalance() <= maxTotalDeposits, 'StrategyBaseTVLLimits: max deposits exceeded');
+    require(amount <= maxPerDeposit, 'PoolBaseTVLLimits: max per deposit exceeded');
+    require(_tokenBalance() <= maxTotalDeposits, 'PoolBaseTVLLimits: max deposits exceeded');
 
     super._beforeDeposit(token, amount);
   }

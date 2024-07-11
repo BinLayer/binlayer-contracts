@@ -7,9 +7,9 @@ import {
   EMPTY_CONTRANCT_ID,
   PROXY_ADMIN_ID,
   SLASHER_PROXY_ID,
-  STRATEGY_IMPL_ID,
-  STRATEGY_MANAGER_PROXY_ID,
-  STRATEGY_PROXY_ID,
+  POOL_IMPL_ID,
+  POOL_CONTROLLER_PROXY_ID,
+  POOL_PROXY_ID,
   WRAPPED_TOKEN_GATEWAY_ID,
 } from '../../helpers/deploy-ids';
 import { getParamPerNetwork } from '../../helpers/config-helpers';
@@ -25,8 +25,8 @@ const func: DeployFunction = async function ({
 
   const network = (FORK ? FORK : hre.network.name) as eNetwork;
 
-  const wbnbStrategyArtifact = await deployments.getOrNull(`WBNB${STRATEGY_PROXY_ID}`);
-  if (!wbnbStrategyArtifact) {
+  const wbnbPoolArtifact = await deployments.getOrNull(`WBNB${POOL_PROXY_ID}`);
+  if (!wbnbPoolArtifact) {
     console.log('[Deployment] Skipping wrapped token gateway');
     return true;
   }
@@ -37,7 +37,7 @@ const func: DeployFunction = async function ({
     throw '[Deployment][Error] Owner or WrappedTokenAddress not config';
   }
 
-  const { address: strategyManagerAddress } = await deployments.get(STRATEGY_MANAGER_PROXY_ID);
+  const { address: poolControllerAddress } = await deployments.get(POOL_CONTROLLER_PROXY_ID);
   const { address: delegationControllerAddress } = await deployments.get(DELEGATION_CONTROLLER_PROXY_ID);
 
   await deploy(WRAPPED_TOKEN_GATEWAY_ID, {
@@ -46,8 +46,8 @@ const func: DeployFunction = async function ({
     args: [
       wrappedTokenAddress,
       owner,
-      wbnbStrategyArtifact.address,
-      strategyManagerAddress,
+      wbnbPoolArtifact.address,
+      poolControllerAddress,
       delegationControllerAddress,
     ],
     ...COMMON_DEPLOY_PARAMS,

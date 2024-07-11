@@ -5,8 +5,8 @@ import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {IListaStakeManager} from '../interfaces/IListaStakeManager.sol';
-import {IStrategy} from '../interfaces/IStrategy.sol';
-import {IStrategyManager} from '../interfaces/IStrategyManager.sol';
+import {IPool} from '../interfaces/IPool.sol';
+import {IPoolController} from '../interfaces/IPoolController.sol';
 import {IDelegationController} from '../interfaces/IDelegationController.sol';
 import {IListaGateway} from '../interfaces/IListaGateway.sol';
 
@@ -15,22 +15,22 @@ contract ListaGateway is IListaGateway, Ownable {
 
   IERC20 internal immutable slisBNB;
   IListaStakeManager internal immutable listaStakeManager;
-  IStrategy internal immutable strategy;
-  IStrategyManager internal immutable strategyManager;
+  IPool internal immutable strategy;
+  IPoolController internal immutable poolController;
 
   constructor(
     address _slisBNB,
     address _owner,
     IListaStakeManager _listaStakeManager,
-    IStrategy _strategy,
-    IStrategyManager _strategyManager
+    IPool _strategy,
+    IPoolController _poolController
   ) {
     slisBNB = IERC20(_slisBNB);
     listaStakeManager = _listaStakeManager;
     strategy = _strategy;
-    strategyManager = _strategyManager;
+    poolController = _poolController;
     _transferOwnership(_owner);
-    IERC20(_slisBNB).approve(address(strategyManager), type(uint256).max);
+    IERC20(_slisBNB).approve(address(poolController), type(uint256).max);
   }
 
   function depositNativeToken() external payable {
@@ -38,7 +38,7 @@ contract ListaGateway is IListaGateway, Ownable {
     listaStakeManager.deposit{value: msg.value}();
     uint256 afterBalance = slisBNB.balanceOf(address(this));
     uint256 amountToStake = afterBalance - beforeBalance;
-    strategyManager.depositIntoStrategyWithStaker(msg.sender, strategy, slisBNB, amountToStake);
+    poolController.depositIntoPoolWithStaker(msg.sender, strategy, slisBNB, amountToStake);
   }
 
   /**
@@ -83,7 +83,7 @@ contract ListaGateway is IListaGateway, Ownable {
   /**
    * @dev Get slisBNB strategy address used by ListaGateway
    */
-  function getStrategyAddress() external view returns (address) {
+  function getPoolAddress() external view returns (address) {
     return address(strategy);
   }
 

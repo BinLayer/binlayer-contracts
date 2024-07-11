@@ -14,7 +14,7 @@ import './DelegationControllerStorage.sol';
  * - enabling anyone to register as an operator in BinLayer
  * - allowing operators to specify parameters related to stakers who delegate to them
  * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
- * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
+ * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the PoolController.sol)
  */
 contract DelegationController is Initializable, OwnableUpgradeable, Pausable, DelegationControllerStorage, ReentrancyGuardUpgradeable {
   // @dev Index for flag that pauses new delegations when set
@@ -32,9 +32,9 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   // @dev Maximum Value for `stakerOptOutWindow`. Approximately equivalent to 6 months.
   uint256 public constant MAX_STAKER_OPT_OUT_WINDOW = 180 days;
 
-  // @notice Simple permission for functions that are only callable by the StrategyManager contract
-  modifier onlyStrategyManager() {
-    require(msg.sender == address(strategyManager), 'DelegationController: onlyStrategyManager');
+  // @notice Simple permission for functions that are only callable by the PoolController.sol contract
+  modifier onlyPoolController() {
+    require(msg.sender == address(poolController), 'DelegationController: onlyPoolController');
     _;
   }
 
@@ -43,9 +43,9 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
     *******************************************************************************/
 
   /**
-   * @dev Initializes the immutable addresses of the strategy mananger and slasher.
+   * @dev Initializes the immutable addresses of the pool mananger and slasher.
    */
-  constructor(IStrategyManager _strategyManager, ISlasher _slasher) DelegationControllerStorage(_strategyManager, _slasher) {
+  constructor(IPoolController _poolController, ISlasher _slasher) DelegationControllerStorage(_poolController, _slasher) {
     _disableInitializers();
     ORIGINAL_CHAIN_ID = block.chainid;
   }
@@ -59,7 +59,7 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
     IPauserRegistry _pauserRegistry,
     uint256 initialPausedStatus,
     uint256 _minWithdrawalDelay,
-    IStrategy[] calldata _strategies,
+    IPool[] calldata _pools,
     uint256[] calldata _withdrawalDelay
   ) external initializer {
     _initializePauser(_pauserRegistry, initialPausedStatus);
@@ -67,7 +67,7 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
     __ReentrancyGuard_init();
     _transferOwnership(initialOwner);
     _setMinWithdrawalDelay(_minWithdrawalDelay);
-    _setStrategyWithdrawalDelay(_strategies, _withdrawalDelay);
+    _setPoolWithdrawalDelay(_pools, _withdrawalDelay);
   }
 
   /*******************************************************************************
@@ -179,8 +179,8 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
 
   /**
    * Allows the staker, the staker's operator, or that operator's delegationApprover to undelegate
-   * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
-   * both the staker and operator, and places the shares and strategies in the withdrawal queue
+   * a staker from their operator. Undelegation immediately removes ALL active shares/pools from
+   * both the staker and operator, and places the shares and pools in the withdrawal queue
    */
   function undelegate(address staker) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
     require(isDelegated(staker), 'DelegationController.undelegate: staker must be delegated to undelegate');
@@ -192,9 +192,9 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
       'DelegationController.undelegate: caller cannot undelegate staker'
     );
 
-    // Gather strategies and shares to remove from staker/operator during undelegation
-    // Undelegation removes ALL currently-active strategies and shares
-    (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
+    // Gather pools and shares to remove from staker/operator during undelegation
+    // Undelegation removes ALL currently-active pools and shares
+    (IPool[] memory pools, uint256[] memory shares) = getDelegatableShares(staker);
 
     // emit an event if this action was not initiated by the staker themselves
     if (msg.sender != staker) {
@@ -206,21 +206,21 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
     delegatedTo[staker] = address(0);
 
     // if no delegatable shares, return an empty array, and don't queue a withdrawal
-    if (strategies.length == 0) {
+    if (pools.length == 0) {
       withdrawalRoots = new bytes32[](0);
     } else {
-      withdrawalRoots = new bytes32[](strategies.length);
-      for (uint256 i = 0; i < strategies.length; i++) {
-        IStrategy[] memory singleStrategy = new IStrategy[](1);
+      withdrawalRoots = new bytes32[](pools.length);
+      for (uint256 i = 0; i < pools.length; i++) {
+        IPool[] memory singlePool = new IPool[](1);
         uint256[] memory singleShare = new uint256[](1);
-        singleStrategy[0] = strategies[i];
+        singlePool[0] = pools[i];
         singleShare[0] = shares[i];
 
         withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
           staker: staker,
           operator: operator,
           withdrawer: staker,
-          strategies: singleStrategy,
+          pools: singlePool,
           shares: singleShare
         });
       }
@@ -230,11 +230,11 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   }
 
   /**
-   * Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
-   * from the staker. If the staker is delegated, withdrawn shares/strategies are also removed from
+   * Allows a staker to withdraw some shares. Withdrawn shares/pools are immediately removed
+   * from the staker. If the staker is delegated, withdrawn shares/pools are also removed from
    * their operator.
    *
-   * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
+   * All withdrawn shares/pools are placed in a queue and can be fully withdrawn after a delay.
    */
   function queueWithdrawals(
     QueuedWithdrawalParams[] calldata queuedWithdrawalParams
@@ -244,7 +244,7 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
 
     for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
       require(
-        queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length,
+        queuedWithdrawalParams[i].pools.length == queuedWithdrawalParams[i].shares.length,
         'DelegationController.queueWithdrawal: input length mismatch'
       );
       require(
@@ -252,14 +252,14 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
         'DelegationController.queueWithdrawal: withdrawer must be staker or wrapped token gateway'
       );
 
-      // Remove shares from staker's strategies and place strategies/shares in queue.
+      // Remove shares from staker's pools and place pools/shares in queue.
       // If the staker is delegated to an operator, the operator's delegated shares are also reduced
       // NOTE: This will fail if the staker doesn't have the shares implied by the input parameters
       withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
         staker: msg.sender,
         operator: operator,
         withdrawer: queuedWithdrawalParams[i].withdrawer,
-        strategies: queuedWithdrawalParams[i].strategies,
+        pools: queuedWithdrawalParams[i].pools,
         shares: queuedWithdrawalParams[i].shares
       });
     }
@@ -269,16 +269,16 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   /**
    * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
    * @param withdrawal The Withdrawal to complete.
-   * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `withdrawal.strategies` array.
+   * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Pool in the `withdrawal.pools` array.
    * This input can be provided with zero length if `receiveAsTokens` is set to 'false' (since in that case, this input will be unused)
    * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
-   * @param receiveAsTokens If true, the shares specified in the withdrawal will be withdrawn from the specified strategies themselves
-   * and sent to the caller, through calls to `withdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
+   * @param receiveAsTokens If true, the shares specified in the withdrawal will be withdrawn from the specified pools themselves
+   * and sent to the caller, through calls to `withdrawal.pools[i].withdraw`. If false, then the shares in the specified pools
    * will simply be transferred to the caller directly.
    * @dev middlewareTimesIndex is unused, but will be used in the Slasher eventually
-   * @dev beaconChainETHStrategy shares are non-transferrable, so if `receiveAsTokens = false` and `withdrawal.withdrawer != withdrawal.staker`, note that
-   * any beaconChainETHStrategy shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
-   * any other strategies, which will be transferred to the withdrawer.
+   * @dev beaconChainETHPool shares are non-transferrable, so if `receiveAsTokens = false` and `withdrawal.withdrawer != withdrawal.staker`, note that
+   * any beaconChainETHPool shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
+   * any other pools, which will be transferred to the withdrawer.
    */
   function completeQueuedWithdrawal(
     Withdrawal calldata withdrawal,
@@ -310,40 +310,40 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   }
 
   /**
-   * @notice Increases a staker's delegated share balance in a strategy.
+   * @notice Increases a staker's delegated share balance in a pool.
    * @param staker The address to increase the delegated shares for their operator.
-   * @param strategy The strategy in which to increase the delegated shares.
+   * @param pool The pool in which to increase the delegated shares.
    * @param shares The number of shares to increase.
    *
-   * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
-   * @dev Callable only by the StrategyManager.
+   * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `pool` by `shares`. Otherwise does nothing.
+   * @dev Callable only by the PoolController.sol.
    */
-  function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external onlyStrategyManager {
+  function increaseDelegatedShares(address staker, IPool pool, uint256 shares) external onlyPoolController {
     // if the staker is delegated to an operator
     if (isDelegated(staker)) {
       address operator = delegatedTo[staker];
 
-      // add strategy shares to delegate's shares
-      _increaseOperatorShares({operator: operator, staker: staker, strategy: strategy, shares: shares});
+      // add pool shares to delegate's shares
+      _increaseOperatorShares({operator: operator, staker: staker, pool: pool, shares: shares});
     }
   }
 
   /**
-   * @notice Decreases a staker's delegated share balance in a strategy.
+   * @notice Decreases a staker's delegated share balance in a pool.
    * @param staker The address to increase the delegated shares for their operator.
-   * @param strategy The strategy in which to decrease the delegated shares.
+   * @param pool The pool in which to decrease the delegated shares.
    * @param shares The number of shares to decrease.
    *
-   * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
-   * @dev Callable only by the StrategyManager or EigenPodManager.
+   * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in `pool` by `shares`. Otherwise does nothing.
+   * @dev Callable only by the PoolController.sol or EigenPodManager.
    */
-  function decreaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external onlyStrategyManager {
+  function decreaseDelegatedShares(address staker, IPool pool, uint256 shares) external onlyPoolController {
     // if the staker is delegated to an operator
     if (isDelegated(staker)) {
       address operator = delegatedTo[staker];
 
-      // subtract strategy shares from delegate's shares
-      _decreaseOperatorShares({operator: operator, staker: staker, strategy: strategy, shares: shares});
+      // subtract pool shares from delegate's shares
+      _decreaseOperatorShares({operator: operator, staker: staker, pool: pool, shares: shares});
     }
   }
 
@@ -356,14 +356,14 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   }
 
   /**
-   * @notice Called by owner to set the minimum withdrawal delay for each passed in strategy
-   * Note that the min cooldown to complete a withdrawal of a strategy is
-   * MAX(minWithdrawalDelay, strategyWithdrawalDelay[strategy])
-   * @param strategies The strategies to set the minimum withdrawal delay for
-   * @param withdrawalDelay The minimum withdrawal delay to set for each strategy
+   * @notice Called by owner to set the minimum withdrawal delay for each passed in pool
+   * Note that the min cooldown to complete a withdrawal of a pool is
+   * MAX(minWithdrawalDelay, poolWithdrawalDelay[pool])
+   * @param pools The pools to set the minimum withdrawal delay for
+   * @param withdrawalDelay The minimum withdrawal delay to set for each pool
    */
-  function setStrategyWithdrawalDelay(IStrategy[] calldata strategies, uint256[] calldata withdrawalDelay) external onlyOwner {
-    _setStrategyWithdrawalDelay(strategies, withdrawalDelay);
+  function setPoolWithdrawalDelay(IPool[] calldata pools, uint256[] calldata withdrawalDelay) external onlyOwner {
+    _setPoolWithdrawalDelay(pools, withdrawalDelay);
   }
 
   /**
@@ -454,10 +454,10 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
     delegatedTo[staker] = operator;
     emit StakerDelegated(staker, operator);
 
-    (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
+    (IPool[] memory pools, uint256[] memory shares) = getDelegatableShares(staker);
 
-    for (uint256 i = 0; i < strategies.length; ) {
-      _increaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: shares[i]});
+    for (uint256 i = 0; i < pools.length; ) {
+      _increaseOperatorShares({operator: operator, staker: staker, pool: pools[i], shares: shares[i]});
 
       unchecked {
         ++i;
@@ -487,25 +487,25 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
     require(msg.sender == withdrawal.withdrawer, 'DelegationController._completeQueuedWithdrawal: only withdrawer can complete action');
 
     if (receiveAsTokens) {
-      require(tokens.length == withdrawal.strategies.length, 'DelegationController._completeQueuedWithdrawal: input length mismatch');
+      require(tokens.length == withdrawal.pools.length, 'DelegationController._completeQueuedWithdrawal: input length mismatch');
     }
 
     // Remove `withdrawalRoot` from pending roots
     delete pendingWithdrawals[withdrawalRoot];
 
-    // Finalize action by converting shares to tokens for each strategy, or
-    // by re-awarding shares in each strategy.
+    // Finalize action by converting shares to tokens for each pool, or
+    // by re-awarding shares in each pool.
     if (receiveAsTokens) {
-      for (uint256 i = 0; i < withdrawal.strategies.length; ) {
+      for (uint256 i = 0; i < withdrawal.pools.length; ) {
         require(
-          withdrawal.startTimestamp + strategyWithdrawalDelay[withdrawal.strategies[i]] <= block.timestamp,
-          'DelegationController._completeQueuedWithdrawal: withdrawalDelay period has not yet passed for this strategy'
+          withdrawal.startTimestamp + poolWithdrawalDelay[withdrawal.pools[i]] <= block.timestamp,
+          'DelegationController._completeQueuedWithdrawal: withdrawalDelay period has not yet passed for this pool'
         );
 
         _withdrawSharesAsTokens({
           staker: withdrawal.staker,
           withdrawer: msg.sender,
-          strategy: withdrawal.strategies[i],
+          pool: withdrawal.pools[i],
           shares: withdrawal.shares[i],
           token: tokens[i]
         });
@@ -513,23 +513,23 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
           ++i;
         }
       }
-      // Award shares back in StrategyManager/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
+      // Award shares back in PoolController.sol/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
     } else {
       address currentOperator = delegatedTo[msg.sender];
-      for (uint256 i = 0; i < withdrawal.strategies.length; ) {
+      for (uint256 i = 0; i < withdrawal.pools.length; ) {
         require(
-          withdrawal.startTimestamp + strategyWithdrawalDelay[withdrawal.strategies[i]] <= block.timestamp,
-          'DelegationController._completeQueuedWithdrawal: withdrawalDelay period has not yet passed for this strategy'
+          withdrawal.startTimestamp + poolWithdrawalDelay[withdrawal.pools[i]] <= block.timestamp,
+          'DelegationController._completeQueuedWithdrawal: withdrawalDelay period has not yet passed for this pool'
         );
 
-        strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], withdrawal.shares[i]);
+        poolController.addShares(msg.sender, tokens[i], withdrawal.pools[i], withdrawal.shares[i]);
         // Similar to `isDelegated` logic
         if (currentOperator != address(0)) {
           _increaseOperatorShares({
             operator: currentOperator,
             // the 'staker' here is the address receiving new shares
             staker: msg.sender,
-            strategy: withdrawal.strategies[i],
+            pool: withdrawal.pools[i],
             shares: withdrawal.shares[i]
           });
         }
@@ -543,48 +543,48 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
     emit WithdrawalCompleted(withdrawalRoot);
   }
 
-  // @notice Increases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesIncreased` event
-  function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
-    operatorShares[operator][strategy] += shares;
-    emit OperatorSharesIncreased(operator, staker, strategy, shares);
+  // @notice Increases `operator`s delegated shares in `pool` by `shares` and emits an `OperatorSharesIncreased` event
+  function _increaseOperatorShares(address operator, address staker, IPool pool, uint256 shares) internal {
+    operatorShares[operator][pool] += shares;
+    emit OperatorSharesIncreased(operator, staker, pool, shares);
   }
 
-  // @notice Decreases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesDecreased` event
-  function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
+  // @notice Decreases `operator`s delegated shares in `pool` by `shares` and emits an `OperatorSharesDecreased` event
+  function _decreaseOperatorShares(address operator, address staker, IPool pool, uint256 shares) internal {
     // This will revert on underflow, so no check needed
-    operatorShares[operator][strategy] -= shares;
-    emit OperatorSharesDecreased(operator, staker, strategy, shares);
+    operatorShares[operator][pool] -= shares;
+    emit OperatorSharesDecreased(operator, staker, pool, shares);
   }
 
   /**
-   * @notice Removes `shares` in `strategies` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
-   * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `strategies` are also decreased appropriately.
-   * @dev If `withdrawer` is not the same address as `staker`, then thirdPartyTransfersForbidden[strategy] must be set to false in the StrategyManager.
+   * @notice Removes `shares` in `pools` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
+   * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `pools` are also decreased appropriately.
+   * @dev If `withdrawer` is not the same address as `staker`, then thirdPartyTransfersForbidden[pool] must be set to false in the PoolController.sol.
    */
   function _removeSharesAndQueueWithdrawal(
     address staker,
     address operator,
     address withdrawer,
-    IStrategy[] memory strategies,
+    IPool[] memory pools,
     uint256[] memory shares
   ) internal returns (bytes32) {
     require(staker != address(0), 'DelegationController._removeSharesAndQueueWithdrawal: staker cannot be zero address');
-    require(strategies.length != 0, 'DelegationController._removeSharesAndQueueWithdrawal: strategies cannot be empty');
+    require(pools.length != 0, 'DelegationController._removeSharesAndQueueWithdrawal: pools cannot be empty');
 
     // Remove shares from staker and operator
     // Each of these operations fail if we attempt to remove more shares than exist
-    for (uint256 i = 0; i < strategies.length; ) {
+    for (uint256 i = 0; i < pools.length; ) {
       // Similar to `isDelegated` logic
       if (operator != address(0)) {
-        _decreaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: shares[i]});
+        _decreaseOperatorShares({operator: operator, staker: staker, pool: pools[i], shares: shares[i]});
       }
 
       require(
-        staker == withdrawer || !strategyManager.thirdPartyTransfersForbidden(strategies[i]),
+        staker == withdrawer || !poolController.thirdPartyTransfersForbidden(pools[i]),
         'DelegationController._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if thirdPartyTransfersForbidden are set'
       );
-      // this call will revert if `shares[i]` exceeds the Staker's current shares in `strategies[i]`
-      strategyManager.removeShares(staker, strategies[i], shares[i]);
+      // this call will revert if `shares[i]` exceeds the Staker's current shares in `pools[i]`
+      poolController.removeShares(staker, pools[i], shares[i]);
 
       unchecked {
         ++i;
@@ -601,7 +601,7 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
       withdrawer: withdrawer,
       nonce: nonce,
       startTimestamp: uint32(block.timestamp),
-      strategies: strategies,
+      pools: pools,
       shares: shares
     });
 
@@ -615,10 +615,10 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   }
 
   /**
-   * @notice Withdraws `shares` in `strategy` to `withdrawer`. Call is ultimately forwarded to the `strategy` with info on the `token`.
+   * @notice Withdraws `shares` in `pool` to `withdrawer`. Call is ultimately forwarded to the `pool` with info on the `token`.
    */
-  function _withdrawSharesAsTokens(address staker, address withdrawer, IStrategy strategy, uint256 shares, IERC20 token) internal {
-    strategyManager.withdrawSharesAsTokens(withdrawer, strategy, shares, token);
+  function _withdrawSharesAsTokens(address staker, address withdrawer, IPool pool, uint256 shares, IERC20 token) internal {
+    poolController.withdrawSharesAsTokens(withdrawer, pool, shares, token);
   }
 
   function _setMinWithdrawalDelay(uint256 _minWithdrawalDelay) internal {
@@ -631,24 +631,24 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   }
 
   /**
-   * @notice Sets the withdrawal delay for each strategy in `_strategies` to `_withdrawalDelay`.
-   * gets called when initializing contract or by calling `setStrategyWithdrawalDelay`
+   * @notice Sets the withdrawal delay for each pool in `_pools` to `_withdrawalDelay`.
+   * gets called when initializing contract or by calling `setPoolWithdrawalDelay`
    */
-  function _setStrategyWithdrawalDelay(IStrategy[] calldata _strategies, uint256[] calldata _withdrawalDelay) internal {
-    require(_strategies.length == _withdrawalDelay.length, 'DelegationController._setStrategyWithdrawalDelay: input length mismatch');
-    uint256 numStrats = _strategies.length;
+  function _setPoolWithdrawalDelay(IPool[] calldata _pools, uint256[] calldata _withdrawalDelay) internal {
+    require(_pools.length == _withdrawalDelay.length, 'DelegationController._setPoolWithdrawalDelay: input length mismatch');
+    uint256 numStrats = _pools.length;
     for (uint256 i = 0; i < numStrats; ++i) {
-      IStrategy strategy = _strategies[i];
-      uint256 prevStrategyWithdrawalDelay = strategyWithdrawalDelay[strategy];
-      uint256 newStrategyWithdrawalDelay = _withdrawalDelay[i];
+      IPool pool = _pools[i];
+      uint256 prevPoolWithdrawalDelay = poolWithdrawalDelay[pool];
+      uint256 newPoolWithdrawalDelay = _withdrawalDelay[i];
       require(
-        newStrategyWithdrawalDelay <= MAX_WITHDRAWAL_DELAY,
-        'DelegationController._setStrategyWithdrawalDelay: _withdrawalDelay cannot be > MAX_WITHDRAWAL_DELAY'
+        newPoolWithdrawalDelay <= MAX_WITHDRAWAL_DELAY,
+        'DelegationController._setPoolWithdrawalDelay: _withdrawalDelay cannot be > MAX_WITHDRAWAL_DELAY'
       );
 
       // set the new withdrawal delay
-      strategyWithdrawalDelay[strategy] = newStrategyWithdrawalDelay;
-      emit StrategyWithdrawalDelaySet(strategy, prevStrategyWithdrawalDelay, newStrategyWithdrawalDelay);
+      poolWithdrawalDelay[pool] = newPoolWithdrawalDelay;
+      emit PoolWithdrawalDelaySet(pool, prevPoolWithdrawalDelay, newPoolWithdrawalDelay);
     }
   }
 
@@ -713,34 +713,34 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
     return _operatorDetails[operator].stakerOptOutWindow;
   }
 
-  /// @notice Given array of strategies, returns array of shares for the operator
-  function getOperatorShares(address operator, IStrategy[] memory strategies) public view returns (uint256[] memory) {
-    uint256[] memory shares = new uint256[](strategies.length);
-    for (uint256 i = 0; i < strategies.length; ++i) {
-      shares[i] = operatorShares[operator][strategies[i]];
+  /// @notice Given array of pools, returns array of shares for the operator
+  function getOperatorShares(address operator, IPool[] memory pools) public view returns (uint256[] memory) {
+    uint256[] memory shares = new uint256[](pools.length);
+    for (uint256 i = 0; i < pools.length; ++i) {
+      shares[i] = operatorShares[operator][pools[i]];
     }
     return shares;
   }
 
   /**
-   * @notice Returns the number of actively-delegatable shares a staker has across all strategies.
+   * @notice Returns the number of actively-delegatable shares a staker has across all pools.
    * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
    */
-  function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
-    // Get currently active shares and strategies for `staker`
-    (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) = strategyManager.getDeposits(staker);
-    return (strategyManagerStrats, strategyManagerShares);
+  function getDelegatableShares(address staker) public view returns (IPool[] memory, uint256[] memory) {
+    // Get currently active shares and pools for `staker`
+    (IPool[] memory poolControllerStrats, uint256[] memory poolControllerShares) = poolController.getDeposits(staker);
+    return (poolControllerStrats, poolControllerShares);
   }
 
   /**
-   * @notice Given a list of strategies, return the minimum cooldown that must pass to withdraw
-   * from all the inputted strategies. Return value is >= minWithdrawalDelay as this is the global min withdrawal delay.
-   * @param strategies The strategies to check withdrawal delays for
+   * @notice Given a list of pools, return the minimum cooldown that must pass to withdraw
+   * from all the inputted pools. Return value is >= minWithdrawalDelay as this is the global min withdrawal delay.
+   * @param pools The pools to check withdrawal delays for
    */
-  function getWithdrawalDelay(IStrategy[] calldata strategies) public view returns (uint256) {
+  function getWithdrawalDelay(IPool[] calldata pools) public view returns (uint256) {
     uint256 withdrawalDelay = minWithdrawalDelay;
-    for (uint256 i = 0; i < strategies.length; ++i) {
-      uint256 currWithdrawalDelay = strategyWithdrawalDelay[strategies[i]];
+    for (uint256 i = 0; i < pools.length; ++i) {
+      uint256 currWithdrawalDelay = poolWithdrawalDelay[pools[i]];
       if (currWithdrawalDelay > withdrawalDelay) {
         withdrawalDelay = currWithdrawalDelay;
       }

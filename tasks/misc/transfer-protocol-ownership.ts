@@ -2,15 +2,15 @@ import { FORK } from './../../helpers/hardhat-config-helpers';
 import { task } from 'hardhat/config';
 import { getContract, waitForTx } from '../../helpers/utilities/tx';
 import { exit } from 'process';
-import { DelegationController, eNetwork, Slasher, StrategyManager } from '../../helpers';
+import { DelegationController, eNetwork, Slasher, PollController } from '../../helpers';
 import { getParamPerNetwork } from '../../helpers/config-helpers';
 import { Configs } from '../../helpers/config';
 import {
   DELEGATION_CONTROLLER_PROXY_ID,
   PROXY_ADMIN_ID,
   SLASHER_PROXY_ID,
-  STRATEGY_MANAGER_IMPL_ID,
-  STRATEGY_MANAGER_PROXY_ID,
+  POOL_CONTROLLER_IMPL_ID,
+  POOL_CONTROLLER_PROXY_ID,
 } from '../../helpers/deploy-ids';
 
 task(`transfer-protocol-ownership`, `Transfer the ownership of protocol from deployer`).setAction(
@@ -36,10 +36,10 @@ task(`transfer-protocol-ownership`, `Transfer the ownership of protocol from dep
     console.log(owner);
 
     const proxyAdmin = await getContract(PROXY_ADMIN_ID);
-    const strategyManager = await hre.ethers.getContractAt(
-      'StrategyManager',
+    const poolController = await hre.ethers.getContractAt(
+      'PollController',
       (
-        await getContract(STRATEGY_MANAGER_PROXY_ID)
+        await getContract(POOL_CONTROLLER_PROXY_ID)
       ).address
     );
     const delegationController = await hre.ethers.getContractAt(
@@ -48,7 +48,7 @@ task(`transfer-protocol-ownership`, `Transfer the ownership of protocol from dep
         await getContract(DELEGATION_CONTROLLER_PROXY_ID)
       ).address
     );
-    const slasherManager = await hre.ethers.getContractAt(
+    const slasherController = await hre.ethers.getContractAt(
       'Slasher',
       (
         await getContract(SLASHER_PROXY_ID)
@@ -67,10 +67,10 @@ task(`transfer-protocol-ownership`, `Transfer the ownership of protocol from dep
       console.log('- Transfered of DelegationController.sol');
     }
 
-    const strategyManagerOwner = await strategyManager.owner();
-    if (strategyManagerOwner === deployer) {
-      await waitForTx(await strategyManager.transferOwnership(owner));
-      console.log('- Transfered of StrategyManager');
+    const poolControllerOwner = await poolController.owner();
+    if (poolControllerOwner === deployer) {
+      await waitForTx(await poolController.transferOwnership(owner));
+      console.log('- Transfered of PoolController.sol');
     }
 
     /** Output of results*/
@@ -86,14 +86,14 @@ task(`transfer-protocol-ownership`, `Transfer the ownership of protocol from dep
         assert: (await delegationController.owner()) === owner,
       },
       {
-        role: 'StrategyManager owner',
-        address: await strategyManager.owner(),
-        assert: (await strategyManager.owner()) === owner,
+        role: 'PoolController.sol owner',
+        address: await poolController.owner(),
+        assert: (await poolController.owner()) === owner,
       },
       {
         role: 'Slasher owner',
-        address: await slasherManager.owner(),
-        assert: (await slasherManager.owner()) === owner,
+        address: await slasherController.owner(),
+        assert: (await slasherController.owner()) === owner,
       },
     ];
 

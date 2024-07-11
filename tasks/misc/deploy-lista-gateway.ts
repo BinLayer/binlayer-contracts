@@ -1,8 +1,8 @@
 import { task } from 'hardhat/config';
 import { eNetwork, FORK } from '../../helpers';
 import {
-  STRATEGY_MANAGER_PROXY_ID,
-  STRATEGY_PROXY_ID,
+  POOL_CONTROLLER_PROXY_ID,
+  POOL_PROXY_ID,
   LISTA_GATEWAY_ID,
 } from '../../helpers/deploy-ids';
 import { Configs } from '../../helpers/config';
@@ -28,8 +28,8 @@ task(`deploy-lista-gateway`, `Deploys the ListaGateway contract`).setAction(asyn
   // const listaStakeManagerAddress = '0x3A2231E023296bbc177d7587DdFd60B0A96F3A29';
   // const slisBNBAddress = '0x96F124Ce690F082f469066aFE90AF633F93d94d8';
 
-  const { address: strategyAddress } = await hre.deployments.get(`slisBNB${STRATEGY_PROXY_ID}`);
-  const { address: strategyManagerAddress } = await hre.deployments.get(STRATEGY_MANAGER_PROXY_ID);
+  const { address: poolAddress } = await hre.deployments.get(`slisBNB${POOL_PROXY_ID}`);
+  const { address: poolManagerAddress } = await hre.deployments.get(POOL_CONTROLLER_PROXY_ID);
 
   const { deployer } = await hre.getNamedAccounts();
   const listaGateway = await hre.deployments.deploy(LISTA_GATEWAY_ID, {
@@ -39,8 +39,8 @@ task(`deploy-lista-gateway`, `Deploys the ListaGateway contract`).setAction(asyn
       slisBNBAddress,
       owner,
       listaStakeManagerAddress,
-      strategyAddress,
-      strategyManagerAddress,
+      poolAddress,
+      poolManagerAddress,
     ],
   });
   console.log(`[Deployment][INFO] ListaGateway deployed ${listaGateway.address}`);

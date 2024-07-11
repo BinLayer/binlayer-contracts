@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0
 pragma solidity 0.8.20;
 
-import './IStrategyManager.sol';
+import './IPoolController.sol';
 import './IDelegationController.sol';
 
 /**
@@ -96,15 +96,15 @@ interface ISlasher {
    */
   function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilTimestamp) external;
 
-  /// @notice The StrategyManager contract of BinLayer
-  function strategyManager() external view returns (IStrategyManager);
+  /// @notice The PoolController.sol contract of BinLayer
+  function poolController() external view returns (IPoolController);
 
   /// @notice The DelegationController.sol contract of BinLayer
   function delegation() external view returns (IDelegationController);
 
   /**
    * @notice Used to determine whether `staker` is actively 'frozen'. If a staker is frozen, then they are potentially subject to
-   * slashing of their funds, and cannot cannot deposit or withdraw from the strategyManager until the slashing process is completed
+   * slashing of their funds, and cannot cannot deposit or withdraw from the poolController until the slashing process is completed
    * and the staker's status is reset (to 'unfrozen').
    * @param staker The staker of interest.
    * @return Returns 'true' if `staker` themselves has their status set to frozen, OR if the staker is delegated

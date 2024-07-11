@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0
 pragma solidity 0.8.20;
 
-import '../interfaces/IStrategyManager.sol';
+import '../interfaces/IPoolController.sol';
 import '../interfaces/IDelegationController.sol';
 import '../interfaces/ISlasher.sol';
 
@@ -28,8 +28,8 @@ abstract contract DelegationControllerStorage is IDelegationController {
    */
   bytes32 internal _DOMAIN_SEPARATOR;
 
-  /// @notice The StrategyManager contract for BinLayer
-  IStrategyManager public immutable strategyManager;
+  /// @notice The PoolController.sol contract for BinLayer
+  IPoolController public immutable poolController;
 
   /// @notice The Slasher contract for BinLayer
   ISlasher public immutable slasher;
@@ -38,13 +38,13 @@ abstract contract DelegationControllerStorage is IDelegationController {
   uint256 public constant MAX_WITHDRAWAL_DELAY = 2592000;
 
   /**
-   * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
-   * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
+   * @notice returns the total number of shares in `pool` that are delegated to `operator`.
+   * @notice Mapping: operator => pool => total number of shares in the pool delegated to the operator.
    * @dev By design, the following invariant should hold for each Strategy:
    * (operator's shares in delegation manager) = sum (shares above zero of all stakers delegated to operator)
    * = sum (delegateable shares of all stakers delegated to the operator)
    */
-  mapping(address => mapping(IStrategy => uint256)) public operatorShares;
+  mapping(address => mapping(IPool => uint256)) public operatorShares;
 
   /**
    * @notice Mapping: operator => OperatorDetails struct
@@ -69,11 +69,11 @@ abstract contract DelegationControllerStorage is IDelegationController {
   mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
 
   /**
-   * @notice Global minimum withdrawal delay for all strategy withdrawals.
+   * @notice Global minimum withdrawal delay for all pool withdrawals.
    * In a prior Goerli release, we only had a global min withdrawal delay across all strategies.
-   * In addition, we now also configure withdrawal delays on a per-strategy basis.
-   * To withdraw from a strategy, max(minWithdrawalDelay, strategyWithdrawalDelay[strategy]) number of timestamp must have passed.
-   * See mapping strategyWithdrawalDelay below for per-strategy withdrawal delays.
+   * In addition, we now also configure withdrawal delays on a per-pool basis.
+   * To withdraw from a pool, max(minWithdrawalDelay, poolWithdrawalDelay[pool]) number of timestamp must have passed.
+   * See mapping poolWithdrawalDelay below for per-pool withdrawal delays.
    */
   uint256 public minWithdrawalDelay;
 
@@ -88,13 +88,13 @@ abstract contract DelegationControllerStorage is IDelegationController {
    * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in timestamp, and adjustable by this contract's owner,
    * up to a maximum of `MAX_WITHDRAWAL_DELAY`. Minimum value is 0 (i.e. no delay enforced).
    */
-  mapping(IStrategy => uint256) public strategyWithdrawalDelay;
+  mapping(IPool => uint256) public poolWithdrawalDelay;
 
   /// @notice Wrapped token gateway
   address public wrappedTokenGateway;
 
-  constructor(IStrategyManager _strategyManager, ISlasher _slasher) {
-    strategyManager = _strategyManager;
+  constructor(IPoolController _poolController, ISlasher _slasher) {
+    poolController = _poolController;
     slasher = _slasher;
   }
 

@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { COMMON_DEPLOY_PARAMS } from '../../helpers/env';
-import { eNetwork, getContract, StrategyManager, waitForTx } from '../../helpers';
+import { eNetwork, getContract, PoolController, waitForTx } from '../../helpers';
 import {
   DELEGATION_CONTROLLER_IMPL_ID,
   DELEGATION_CONTROLLER_PROXY_ID,
@@ -10,9 +10,9 @@ import {
   PROXY_ADMIN_ID,
   SLASHER_IMPL_ID,
   SLASHER_PROXY_ID,
-  STRATEGY_CONTROLLER_IMPL_ID,
-  STRATEGY_CONTROLLER_PROXY_ID,
-  STRATEGY_PROXY_ID,
+  POOL_CONTROLLER_IMPL_ID,
+  POOL_CONTROLLER_PROXY_ID,
+  POOL_PROXY_ID,
   WRAPPED_TOKEN_GATEWAY_ID,
 } from '../../helpers/deploy-ids';
 import { ethers } from 'ethers';
@@ -32,34 +32,34 @@ const func: DeployFunction = async function ({
   const { address: pauserRegistryAddress } = await deployments.get(PAUSER_REGISTRY_ID);
 
   const DelegationControllerProxyArtifact = await deployments.get(DELEGATION_CONTROLLER_PROXY_ID);
-  const StrategyManagerProxyArtifact = await deployments.get(STRATEGY_CONTROLLER_PROXY_ID);
+  const PoolControllerProxyArtifact = await deployments.get(POOL_CONTROLLER_PROXY_ID);
   const SlasherProxyArtifact = await deployments.get(SLASHER_PROXY_ID);
   const DelegationControllerImplArtifact = await deployments.get(DELEGATION_CONTROLLER_IMPL_ID);
-  const StrategyManagerImplArtifact = await deployments.get(STRATEGY_CONTROLLER_IMPL_ID);
+  const PoolControllerImplArtifact = await deployments.get(POOL_CONTROLLER_IMPL_ID);
   const SlasherImplArtifact = await deployments.get(SLASHER_IMPL_ID);
 
   const ifaceDelegation = new ethers.utils.Interface(DelegationControllerImplArtifact.abi);
-  const ifaceStrategy = new ethers.utils.Interface(StrategyManagerImplArtifact.abi);
+  const ifacePool = new ethers.utils.Interface(PoolControllerImplArtifact.abi);
   const ifaceSlasher = new ethers.utils.Interface(SlasherImplArtifact.abi);
 
   const proxyAdmin = await getContract(PROXY_ADMIN_ID);
 
   const owner = getParamPerNetwork(Configs.Owner, network);
   const minWithdrawalDelay = getParamPerNetwork(Configs.MinWithdrawalDelay, network);
-  const configs = getParamPerNetwork(Configs.StrategyConfigs, network);
-  const strategies = [];
+  const configs = getParamPerNetwork(Configs.PoolConfigs, network);
+  const pools = [];
   const withdrawalDelays = [];
   const thirdPartyTransfersForbiddenValues = [];
   for (let key in configs) {
     const config = configs[key];
-    const { address: strategyAddress } = await deployments.get(`${key}${STRATEGY_PROXY_ID}`);
-    strategies.push(strategyAddress);
+    const { address: poolAddress } = await deployments.get(`${key}${POOL_PROXY_ID}`);
+    pools.push(poolAddress);
     withdrawalDelays.push(config.withdrawalDelay);
     thirdPartyTransfersForbiddenValues.push(false);
   }
 
-  if (strategies.length == 0 || strategies.length != withdrawalDelays.length) {
-    throw '[Deployment][Error] strategies withdrawalDeplays not match';
+  if (pools.length == 0 || pools.length != withdrawalDelays.length) {
+    throw '[Deployment][Error] pools withdrawalDeplays not match';
   }
 
   const delegationControllerPausedStatus = getParamPerNetwork(
@@ -78,7 +78,7 @@ const func: DeployFunction = async function ({
         pauserRegistryAddress,
         delegationControllerPausedStatus,
         minWithdrawalDelay,
-        strategies,
+        pools,
         withdrawalDelays,
       ])
     )
@@ -94,43 +94,43 @@ const func: DeployFunction = async function ({
     await waitForTx(
       await delegationControllerInstance.updateWrappedTokenGateway(wrappedTokenGatewayArtifact.address)
     );
-    console.log(`[Deployment][INFO] Config gateway ${strategies}`);
+    console.log(`[Deployment][INFO] Config gateway ${pools}`);
   }
 
   const whiteLister = getParamPerNetwork(Configs.WhiteLister, network);
-  const strategyManagerPausedStatus = getParamPerNetwork(
-    Configs.StrategyManagerPausedStatus,
+  const poolControllerPausedStatus = getParamPerNetwork(
+    Configs.PoolControllerPausedStatus,
     network
   );
 
   await waitForTx(
     await proxyAdmin.upgradeAndCall(
-      StrategyManagerProxyArtifact.address,
-      StrategyManagerImplArtifact.address,
-      ifaceStrategy.encodeFunctionData('initialize', [
+      PoolControllerProxyArtifact.address,
+      PoolControllerImplArtifact.address,
+      ifacePool.encodeFunctionData('initialize', [
         deployer, // need transfer ownership
         deployer, // need transfer whitelister
         pauserRegistryAddress,
-        strategyManagerPausedStatus,
+        poolControllerPausedStatus,
       ])
     )
   );
-  console.log('[Deployment][INFO] Upgraded StrategyManager');
+  console.log('[Deployment][INFO] Upgraded PoolController.sol');
 
-  const strategyManagerInstance = await hre.ethers.getContractAt(
-    'StrategyManager',
-    StrategyManagerProxyArtifact.address
+  const poolControllerInstance = await hre.ethers.getContractAt(
+    'PoolController',
+    PoolControllerProxyArtifact.address
   );
   await waitForTx(
-    await strategyManagerInstance.addStrategiesToDepositWhitelist(
-      strategies,
+    await poolControllerInstance.addPoolsToDepositWhitelist(
+      pools,
       thirdPartyTransfersForbiddenValues
     )
   );
-  console.log(`[Deployment][INFO] Config strategy manager white list strategy ${strategies}`);
+  console.log(`[Deployment][INFO] Config pool manager white list pool ${pools}`);
 
-  await waitForTx(await strategyManagerInstance.setStrategyWhitelister(whiteLister!));
-  console.log(`[Deployment][INFO] Transfered strategy white lister to ${whiteLister}`);
+  await waitForTx(await poolControllerInstance.setPoolWhitelister(whiteLister!));
+  console.log(`[Deployment][INFO] Transfered pool white lister to ${whiteLister}`);
 
   const slasherPausedStatus = getParamPerNetwork(Configs.SlasherPausedStatus, network);
 

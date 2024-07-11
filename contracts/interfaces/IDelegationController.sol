@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0
 pragma solidity 0.8.20;
 
-import './IStrategy.sol';
+import './IPool.sol';
 import './ISignatureUtils.sol';
-import './IStrategyManager.sol';
+import './IPoolController.sol';
 
 /**
  * @title DelegationController
@@ -11,7 +11,7 @@ import './IStrategyManager.sol';
  * - enabling anyone to register as an operator in BinLayer
  * - allowing operators to specify parameters related to stakers who delegate to them
  * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
- * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
+ * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the PoolController.sol)
  */
 interface IDelegationController is ISignatureUtils {
   // @notice Struct used for storing information about a single operator who has registered with BinLayer
@@ -83,16 +83,16 @@ interface IDelegationController is ISignatureUtils {
     uint256 nonce;
     // Block timestamp when the Withdrawal was created
     uint32 startTimestamp;
-    // Array of strategies that the Withdrawal contains
-    IStrategy[] strategies;
-    // Array containing the amount of shares in each Strategy in the `strategies` array
+    // Array of pools that the Withdrawal contains
+    IPool[] pools;
+    // Array containing the amount of shares in each Pool in the `pools` array
     uint256[] shares;
   }
 
   struct QueuedWithdrawalParams {
-    // Array of strategies that the QueuedWithdrawal contains
-    IStrategy[] strategies;
-    // Array containing the amount of shares in each Strategy in the `strategies` array
+    // Array of pools that the QueuedWithdrawal contains
+    IPool[] pools;
+    // Array containing the amount of shares in each Pool in the `pools` array
     uint256[] shares;
     // The address of the withdrawer
     address withdrawer;
@@ -110,11 +110,11 @@ interface IDelegationController is ISignatureUtils {
    */
   event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
 
-  /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
-  event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
+  /// @notice Emitted whenever an operator's shares are increased for a given pool. Note that shares is the delta in the operator's shares.
+  event OperatorSharesIncreased(address indexed operator, address staker, IPool pool, uint256 shares);
 
-  /// @notice Emitted whenever an operator's shares are decreased for a given strategy. Note that shares is the delta in the operator's shares.
-  event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
+  /// @notice Emitted whenever an operator's shares are decreased for a given pool. Note that shares is the delta in the operator's shares.
+  event OperatorSharesDecreased(address indexed operator, address staker, IPool pool, uint256 shares);
 
   /// @notice Emitted when @param staker delegates to @param operator.
   event StakerDelegated(address indexed staker, address indexed operator);
@@ -138,8 +138,8 @@ interface IDelegationController is ISignatureUtils {
   /// @notice Emitted when the `minWithdrawalDelay` variable is modified from `previousValue` to `newValue`.
   event MinWithdrawalDelaySet(uint256 previousValue, uint256 newValue);
 
-  /// @notice Emitted when the `strategyWithdrawalDelay` variable is modified from `previousValue` to `newValue`.
-  event StrategyWithdrawalDelaySet(IStrategy strategy, uint256 previousValue, uint256 newValue);
+  /// @notice Emitted when the `poolWithdrawalDelay` variable is modified from `previousValue` to `newValue`.
+  event PoolWithdrawalDelaySet(IPool pool, uint256 previousValue, uint256 newValue);
 
   event UpdateWrappedTokenGateway(address previousGateway, address currentGateway);
 
@@ -212,7 +212,7 @@ interface IDelegationController is ISignatureUtils {
 
   /**
    * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into the "undelegation limbo" mode of the EigenPodManager
-   * and queues a withdrawal of all of the staker's shares in the StrategyManager (to the staker), if necessary.
+   * and queues a withdrawal of all of the staker's shares in the PoolController.sol (to the staker), if necessary.
    * @param staker The account to be undelegated.
    * @return withdrawalRoot The root of the newly queued withdrawal, if a withdrawal was queued. Otherwise just bytes32(0).
    *
@@ -223,27 +223,27 @@ interface IDelegationController is ISignatureUtils {
   function undelegate(address staker) external returns (bytes32[] memory withdrawalRoot);
 
   /**
-   * Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
-   * from the staker. If the staker is delegated, withdrawn shares/strategies are also removed from
+   * Allows a staker to withdraw some shares. Withdrawn shares/pools are immediately removed
+   * from the staker. If the staker is delegated, withdrawn shares/pools are also removed from
    * their operator.
    *
-   * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
+   * All withdrawn shares/pools are placed in a queue and can be fully withdrawn after a delay.
    */
   function queueWithdrawals(QueuedWithdrawalParams[] calldata queuedWithdrawalParams) external returns (bytes32[] memory);
 
   /**
    * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
    * @param withdrawal The Withdrawal to complete.
-   * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `withdrawal.strategies` array.
+   * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Pool in the `withdrawal.pools` array.
    * This input can be provided with zero length if `receiveAsTokens` is set to 'false' (since in that case, this input will be unused)
    * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
-   * @param receiveAsTokens If true, the shares specified in the withdrawal will be withdrawn from the specified strategies themselves
-   * and sent to the caller, through calls to `withdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
+   * @param receiveAsTokens If true, the shares specified in the withdrawal will be withdrawn from the specified pools themselves
+   * and sent to the caller, through calls to `withdrawal.pools[i].withdraw`. If false, then the shares in the specified pools
    * will simply be transferred to the caller directly.
    * @dev middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`
-   * @dev beaconChainETHStrategy shares are non-transferrable, so if `receiveAsTokens = false` and `withdrawal.withdrawer != withdrawal.staker`, note that
-   * any beaconChainETHStrategy shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
-   * any other strategies, which will be transferred to the withdrawer.
+   * @dev beaconChainETHPool shares are non-transferrable, so if `receiveAsTokens = false` and `withdrawal.withdrawer != withdrawal.staker`, note that
+   * any beaconChainETHPool shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
+   * any other pools, which will be transferred to the withdrawer.
    */
   function completeQueuedWithdrawal(
     Withdrawal calldata withdrawal,
@@ -269,26 +269,26 @@ interface IDelegationController is ISignatureUtils {
   ) external;
 
   /**
-   * @notice Increases a staker's delegated share balance in a strategy.
+   * @notice Increases a staker's delegated share balance in a pool.
    * @param staker The address to increase the delegated shares for their operator.
-   * @param strategy The strategy in which to increase the delegated shares.
+   * @param pool The pool in which to increase the delegated shares.
    * @param shares The number of shares to increase.
    *
-   * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
-   * @dev Callable only by the StrategyManager or EigenPodManager.
+   * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `pool` by `shares`. Otherwise does nothing.
+   * @dev Callable only by the PoolController.sol or EigenPodManager.
    */
-  function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external;
+  function increaseDelegatedShares(address staker, IPool pool, uint256 shares) external;
 
   /**
-   * @notice Decreases a staker's delegated share balance in a strategy.
+   * @notice Decreases a staker's delegated share balance in a pool.
    * @param staker The address to increase the delegated shares for their operator.
-   * @param strategy The strategy in which to decrease the delegated shares.
+   * @param pool The pool in which to decrease the delegated shares.
    * @param shares The number of shares to decrease.
    *
-   * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
-   * @dev Callable only by the StrategyManager or EigenPodManager.
+   * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in `pool` by `shares`. Otherwise does nothing.
+   * @dev Callable only by the PoolController.sol or EigenPodManager.
    */
-  function decreaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external;
+  function decreaseDelegatedShares(address staker, IPool pool, uint256 shares) external;
 
   /**
    * @notice returns the address of the operator that `staker` is delegated to.
@@ -318,25 +318,25 @@ interface IDelegationController is ISignatureUtils {
   function stakerOptOutWindow(address operator) external view returns (uint256);
 
   /**
-   * @notice Given array of strategies, returns array of shares for the operator
+   * @notice Given array of pools, returns array of shares for the operator
    */
-  function getOperatorShares(address operator, IStrategy[] memory strategies) external view returns (uint256[] memory);
+  function getOperatorShares(address operator, IPool[] memory pools) external view returns (uint256[] memory);
 
   /**
-   * @notice Given a list of strategies, return the minimum cooldown that must pass to withdraw
-   * from all the inputted strategies. Return value is >= minWithdrawalDelay as this is the global min withdrawal delay.
-   * @param strategies The strategies to check withdrawal delays for
+   * @notice Given a list of pools, return the minimum cooldown that must pass to withdraw
+   * from all the inputted pools. Return value is >= minWithdrawalDelay as this is the global min withdrawal delay.
+   * @param pools The pools to check withdrawal delays for
    */
-  function getWithdrawalDelay(IStrategy[] calldata strategies) external view returns (uint256);
+  function getWithdrawalDelay(IPool[] calldata pools) external view returns (uint256);
 
   /**
-   * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
-   * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
-   * @dev By design, the following invariant should hold for each Strategy:
+   * @notice returns the total number of shares in `pool` that are delegated to `operator`.
+   * @notice Mapping: operator => pool => total number of shares in the pool delegated to the operator.
+   * @dev By design, the following invariant should hold for each Pool:
    * (operator's shares in delegation manager) = sum (shares above zero of all stakers delegated to operator)
    * = sum (delegateable shares of all stakers delegated to the operator)
    */
-  function operatorShares(address operator, IStrategy strategy) external view returns (uint256);
+  function operatorShares(address operator, IPool pool) external view returns (uint256);
 
   /**
    * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
@@ -361,16 +361,16 @@ interface IDelegationController is ISignatureUtils {
   /**
    * @notice Minimum delay enforced by this contract for completing queued withdrawals. Cooldown, and adjustable by this contract's owner,
    * up to a maximum of `MAX_WITHDRAWAL_DELAY`. Minimum value is 0 (i.e. no delay enforced).
-   * Note that strategies each have a separate withdrawal delay, which can be greater than this value. So the minimum cooldown that must pass
-   * to withdraw a strategy is MAX(minWithdrawalDelay, strategyWithdrawalDelay[strategy])
+   * Note that pools each have a separate withdrawal delay, which can be greater than this value. So the minimum cooldown that must pass
+   * to withdraw a pool is MAX(minWithdrawalDelay, poolWithdrawalDelay[pool])
    */
   function minWithdrawalDelay() external view returns (uint256);
 
   /**
-   * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Cooldown, and adjustable by this contract's owner,
+   * @notice Minimum delay enforced by this contract per Pool for completing queued withdrawals. Cooldown, and adjustable by this contract's owner,
    * up to a maximum of `MAX_WITHDRAWAL_DELAY`. Minimum value is 0 (i.e. no delay enforced).
    */
-  function strategyWithdrawalDelay(IStrategy strategy) external view returns (uint256);
+  function poolWithdrawalDelay(IPool pool) external view returns (uint256);
 
   /**
    * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`
