@@ -42,6 +42,14 @@ export const Configs: IConfiguration = {
         maxDeposits: '10000000000000000000000000',
         withdrawalDelay: 604800,
       },
+      BNBx: {
+        tokenAddress: '0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275',
+        tokenName: 'Liquid Staking BNB',
+        tokenSymbol: 'BNBx',
+        maxPerDeposit: '10000000000000000000000',
+        maxDeposits: '10000000000000000000000000',
+        withdrawalDelay: 604800,
+      },
     },
   },
   WrappedTokenAddress: {
