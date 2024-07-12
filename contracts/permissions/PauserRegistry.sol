@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import '../interfaces/IPauserRegistry.sol';
+import '../helpers/Errors.sol';
 
 /**
  * @title Defines pauser & unpauser roles + modifiers to be used elsewhere.
@@ -14,7 +15,7 @@ contract PauserRegistry is IPauserRegistry {
   address public unpauser;
 
   modifier onlyUnpauser() {
-    require(msg.sender == unpauser, 'msg.sender is not permissioned as unpauser');
+    require(msg.sender == unpauser, Errors.NOT_UNPAUSER);
     _;
   }
 
@@ -38,13 +39,13 @@ contract PauserRegistry is IPauserRegistry {
   }
 
   function _setIsPauser(address pauser, bool canPause) internal {
-    require(pauser != address(0), 'PauserRegistry._setPauser: zero address input');
+    require(pauser != address(0), Errors.ZERO_ADDRESS_NOT_VALID);
     isPauser[pauser] = canPause;
     emit PauserStatusChanged(pauser, canPause);
   }
 
   function _setUnpauser(address newUnpauser) internal {
-    require(newUnpauser != address(0), 'PauserRegistry._setUnpauser: zero address input');
+    require(newUnpauser != address(0), Errors.ZERO_ADDRESS_NOT_VALID);
     emit UnpauserChanged(unpauser, newUnpauser);
     unpauser = newUnpauser;
   }

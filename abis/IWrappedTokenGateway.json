@@ -1,0 +1,80 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "staker",
+        "type": "address"
+      }
+    ],
+    "name": "depositNativeToken",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "staker",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "delegatedTo",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "withdrawer",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "startTimestamp",
+            "type": "uint32"
+          },
+          {
+            "internalType": "contract IPool[]",
+            "name": "pools",
+            "type": "address[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "shares",
+            "type": "uint256[]"
+          }
+        ],
+        "internalType": "struct IDelegationController.Withdrawal[]",
+        "name": "withdrawals",
+        "type": "tuple[]"
+      },
+      {
+        "internalType": "contract IERC20[][]",
+        "name": "tokens",
+        "type": "address[][]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "middlewareTimesIndexs",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bool[]",
+        "name": "receiveAsTokens",
+        "type": "bool[]"
+      }
+    ],
+    "name": "withdrawNativeTokens",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

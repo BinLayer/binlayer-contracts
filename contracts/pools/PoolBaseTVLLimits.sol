@@ -55,7 +55,7 @@ contract PoolBaseTVLLimits is PoolBase {
   function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) internal {
     emit MaxPerDepositUpdated(maxPerDeposit, newMaxPerDeposit);
     emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
-    require(newMaxPerDeposit <= newMaxTotalDeposits, 'PoolBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits');
+    require(newMaxPerDeposit <= newMaxTotalDeposits, Errors.MAX_PER_DEPOSIT_EXCEEDS_MAX_TOTAL);
     maxPerDeposit = newMaxPerDeposit;
     maxTotalDeposits = newMaxTotalDeposits;
   }
@@ -73,8 +73,8 @@ contract PoolBaseTVLLimits is PoolBase {
    * @param amount The amount of `token` being deposited
    */
   function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
-    require(amount <= maxPerDeposit, 'PoolBaseTVLLimits: max per deposit exceeded');
-    require(_tokenBalance() <= maxTotalDeposits, 'PoolBaseTVLLimits: max deposits exceeded');
+    require(amount <= maxPerDeposit, Errors.MAX_PER_DEPOSIT_LIMIT_EXCEEDED);
+    require(_tokenBalance() <= maxTotalDeposits, Errors.MAX_DEPOSITS_EXCEEDED);
 
     super._beforeDeposit(token, amount);
   }

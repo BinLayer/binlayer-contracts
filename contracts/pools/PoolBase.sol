@@ -56,7 +56,7 @@ contract PoolBase is Initializable, Pausable, IPool {
 
   /// @notice Simply checks that the `msg.sender` is the `poolController`, which is an address stored immutably at construction.
   modifier onlyPoolController() {
-    require(msg.sender == address(poolController), 'PoolBase.onlyPoolController');
+    require(msg.sender == address(poolController), Errors.ONLY_POOL_CONTROLLER);
     _;
   }
 
@@ -112,7 +112,7 @@ contract PoolBase is Initializable, Pausable, IPool {
     newShares = (amount * virtualShareAmount) / virtualPriorTokenBalance;
 
     // extra check for correctness / against edge case where share rate can be massively inflated as a 'griefing' sort of attack
-    require(newShares != 0, 'PoolBase.deposit: newShares cannot be zero');
+    require(newShares != 0, Errors.ZERO_SHARES_NOT_VALID);
 
     // update total share amount to account for deposit
     totalShares = (priorTotalShares + newShares);
@@ -139,7 +139,7 @@ contract PoolBase is Initializable, Pausable, IPool {
     // copy `totalShares` value to memory, prior to any change
     uint256 priorTotalShares = totalShares;
 
-    require(amountShares <= priorTotalShares, 'PoolBase.withdraw: amountShares must be less than or equal to totalShares');
+    require(amountShares <= priorTotalShares, Errors.WITHDRAW_AMOUNT_SHARES_TOO_HIGH);
 
     // account for virtual shares and balance
     uint256 virtualPriorTotalShares = priorTotalShares + SHARES_OFFSET;
@@ -159,7 +159,7 @@ contract PoolBase is Initializable, Pausable, IPool {
    * @param amount The amount of `token` being deposited
    */
   function _beforeDeposit(IERC20 token, uint256 amount) internal virtual {
-    require(token == underlyingToken, 'PoolBase.deposit: Can only deposit underlyingToken');
+    require(token == underlyingToken, Errors.DEPOSIT_ONLY_UNDERLYING_TOKEN);
   }
 
   /**
@@ -169,7 +169,7 @@ contract PoolBase is Initializable, Pausable, IPool {
    * @param amountShares The amount of shares being withdrawn
    */
   function _beforeWithdrawal(address recipient, IERC20 token, uint256 amountShares) internal virtual {
-    require(token == underlyingToken, 'PoolBase.withdraw: Can only withdraw the pool token');
+    require(token == underlyingToken, Errors.WITHDRAW_ONLY_UNDERLYING_TOKEN);
   }
 
   /**

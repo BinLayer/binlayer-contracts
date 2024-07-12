@@ -9,6 +9,7 @@ import {IPool} from '../interfaces/IPool.sol';
 import {IPoolController} from '../interfaces/IPoolController.sol';
 import {IDelegationController} from '../interfaces/IDelegationController.sol';
 import {IWrappedTokenGateway} from '../interfaces/IWrappedTokenGateway.sol';
+import {Errors} from '../helpers/Errors.sol';
 
 contract WrappedTokenGateway is IWrappedTokenGateway, Ownable {
   using SafeERC20 for IERC20;
@@ -45,9 +46,9 @@ contract WrappedTokenGateway is IWrappedTokenGateway, Ownable {
     bool[] calldata receiveAsTokens
   ) external {
     for (uint256 i = 0; i < withdrawals.length; i++) {
-      require(withdrawals[i].staker == msg.sender, 'Withdrawer must be staker');
+      require(withdrawals[i].staker == msg.sender, Errors.WITHDRAWER_MUST_BE_STAKER);
       for (uint256 j = 0; j < withdrawals[i].pools.length; j++) {
-        require(withdrawals[i].pools[j] == pool, 'Only support wrapped token pool');
+        require(withdrawals[i].pools[j] == pool, Errors.ONLY_SUPPORT_WRAPPED_TOKEN_POOL);
       }
     }
     uint256 beforeBalance = wrappedToken.balanceOf(address(this));

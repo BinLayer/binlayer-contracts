@@ -8,6 +8,7 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '../permissions/Pausable.sol';
 import './PoolControllerStorage.sol';
 import '../libraries/EIP1271SignatureUtils.sol';
+import '../helpers/Errors.sol';
 
 /**
  * @title The primary entry- and exit-point for funds into and out of BinLayer.
@@ -27,17 +28,17 @@ contract PoolController is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
   uint256 internal immutable ORIGINAL_CHAIN_ID;
 
   modifier onlyPoolWhitelister() {
-    require(msg.sender == poolWhitelister, 'PoolController.onlyPoolWhitelister: not the poolWhitelister');
+    require(msg.sender == poolWhitelister, Errors.NOT_POOL_WHITELISTER);
     _;
   }
 
   modifier onlyPoolsWhitelistedForDeposit(IPool pool) {
-    require(poolIsWhitelistedForDeposit[pool], 'PoolController.onlyPoolsWhitelistedForDeposit: pool not whitelisted');
+    require(poolIsWhitelistedForDeposit[pool], Errors.POOL_NOT_WHITELISTED);
     _;
   }
 
   modifier onlyDelegationController() {
-    require(msg.sender == address(delegation), 'PoolController.onlyDelegationController: not the DelegationController');
+    require(msg.sender == address(delegation), Errors.NOT_DELEGATION_CONTROLLER);
     _;
   }
 
@@ -111,7 +112,7 @@ contract PoolController is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     uint256 amount
   ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
     if (staker != msg.sender) {
-      require(!thirdPartyTransfersForbidden[pool], 'PoolController.depositIntoPoolWithStaker: third transfers disabled');
+      require(!thirdPartyTransfersForbidden[pool], Errors.THIRD_PARTY_TRANSFERS_DISABLED);
     }
     shares = _depositIntoPool(staker, pool, token, amount);
   }
@@ -145,8 +146,8 @@ contract PoolController is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     uint256 expiry,
     bytes memory signature
   ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
-    require(!thirdPartyTransfersForbidden[pool], 'PoolController.depositIntoPoolWithSignature: third transfers disabled');
-    require(expiry >= block.timestamp, 'PoolController.depositIntoPoolWithSignature: signature expired');
+    require(!thirdPartyTransfersForbidden[pool], Errors.THIRD_PARTY_TRANSFERS_DISABLED);
+    require(expiry >= block.timestamp, Errors.SIGNATURE_EXPIRED);
     // calculate struct hash, then increment `staker`'s nonce
     uint256 nonce = nonces[staker];
     bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, staker, pool, token, amount, nonce, expiry));
@@ -212,10 +213,7 @@ contract PoolController is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     IPool[] calldata poolsToWhitelist,
     bool[] calldata thirdPartyTransfersForbiddenValues
   ) external onlyPoolWhitelister {
-    require(
-      poolsToWhitelist.length == thirdPartyTransfersForbiddenValues.length,
-      'PoolController.addPoolsToDepositWhitelist: array lengths do not match'
-    );
+    require(poolsToWhitelist.length == thirdPartyTransfersForbiddenValues.length, Errors.ARRAY_LENGTH_MISMATCH);
     uint256 poolsToWhitelistLength = poolsToWhitelist.length;
     for (uint256 i = 0; i < poolsToWhitelistLength; ) {
       // change storage and emit event only if pool is not already in whitelist
@@ -264,15 +262,12 @@ contract PoolController is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
    */
   function _addShares(address staker, IERC20 token, IPool pool, uint256 shares) internal {
     // sanity checks on inputs
-    require(staker != address(0), 'PoolController._addShares: staker cannot be zero address');
-    require(shares != 0, 'PoolController._addShares: shares should not be zero!');
+    require(staker != address(0), Errors.ZERO_ADDRESS_NOT_VALID);
+    require(shares != 0, Errors.ZERO_SHARES_NOT_VALID);
 
     // if they dont have existing shares of this pool, add it to their strats
     if (stakerPoolShares[staker][pool] == 0) {
-      require(
-        stakerPoolList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH,
-        'PoolController._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH'
-      );
+      require(stakerPoolList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH, Errors.DEPOSIT_EXCEEDS_MAX_LENGTH);
       stakerPoolList[staker].push(pool);
     }
 
@@ -322,12 +317,12 @@ contract PoolController is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
    */
   function _removeShares(address staker, IPool pool, uint256 shareAmount) internal returns (bool) {
     // sanity checks on inputs
-    require(shareAmount != 0, 'PoolController._removeShares: shareAmount should not be zero!');
+    require(shareAmount != 0, Errors.ZERO_SHARES_NOT_VALID);
 
     //check that the user has sufficient shares
     uint256 userShares = stakerPoolShares[staker][pool];
 
-    require(shareAmount <= userShares, 'PoolController._removeShares: shareAmount too high');
+    require(shareAmount <= userShares, Errors.SHARE_AMOUNT_TOO_HIGH);
     //unchecked arithmetic since we just checked this above
     unchecked {
       userShares = userShares - shareAmount;
@@ -367,7 +362,7 @@ contract PoolController is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
       }
     }
     // if we didn't find the pool, revert
-    require(j != stratsLength, 'PoolController._removePoolFromStakerPoolList: pool not found');
+    require(j != stratsLength, Errors.POOL_NOT_FOUND);
     // pop off the last entry in the list of pools
     stakerPoolList[staker].pop();
   }
