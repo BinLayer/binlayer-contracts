@@ -21,11 +21,11 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   // @dev Flag index that, when set, pauses new delegations
   uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
-  // @dev Index for flag that pauses queuing new withdrawals when set.
-  uint8 internal constant PAUSED_ENTER_WITHDRAWAL_QUEUE = 1;
+  // @dev Index for flag that pauses unstake when set.
+  uint8 internal constant PAUSED_UNSTAKE = 1;
 
-  // @dev Index for flag that pauses completing existing withdrawals when set.
-  uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
+  // @dev Index for flag that pauses withdraw when set.
+  uint8 internal constant PAUSED_WITHDRAW = 2;
 
   // @dev Chain ID at the time of contract deployment
   uint256 internal immutable ORIGINAL_CHAIN_ID;
@@ -178,9 +178,9 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   /**
    * Allows the staker, the staker's operator, or that operator's delegationApprover to undelegate
    * a staker from their operator. Undelegation immediately removes ALL active shares/pools from
-   * both the staker and operator, and places the shares and pools in the withdrawal queue
+   * both the staker and operator, and places the shares and pools in the unstake
    */
-  function undelegate(address staker) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
+  function undelegate(address staker) external onlyWhenNotPaused(PAUSED_UNSTAKE) returns (bytes32[] memory withdrawalRoots) {
     require(isDelegated(staker), Errors.STAKER_MUST_BE_DELEGATED);
     require(!isOperator(staker), Errors.CANNOT_UNDELEGATE_OPERATOR);
     require(staker != address(0), Errors.ZERO_ADDRESS_NOT_VALID);
@@ -203,7 +203,7 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
     emit StakerUndelegated(staker, operator);
     delegatedTo[staker] = address(0);
 
-    // if no delegatable shares, return an empty array, and don't queue a withdrawal
+    // if no delegatable shares, return an empty array, and don't unstake
     if (pools.length == 0) {
       withdrawalRoots = new bytes32[](0);
     } else {
@@ -214,7 +214,7 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
         singlePool[0] = pools[i];
         singleShare[0] = shares[i];
 
-        withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
+        withdrawalRoots[i] = _removeSharesAndUnstake({
           staker: staker,
           operator: operator,
           withdrawer: staker,
@@ -232,30 +232,28 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
    * from the staker. If the staker is delegated, withdrawn shares/pools are also removed from
    * their operator.
    *
-   * All withdrawn shares/pools are queued for complete withdrawal following a specified delay.
+   * All withdrawn shares/pools are placed in a queue and can be fully withdrawn after a delay.
    */
-  function queueWithdrawals(
-    QueuedWithdrawalParams[] calldata queuedWithdrawalParams
-  ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory) {
-    bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
+  function unstakes(UnstakeParams[] calldata unstakeParams) external onlyWhenNotPaused(PAUSED_UNSTAKE) returns (bytes32[] memory) {
+    bytes32[] memory withdrawalRoots = new bytes32[](unstakeParams.length);
     address operator = delegatedTo[msg.sender];
 
-    for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
-      require(queuedWithdrawalParams[i].pools.length == queuedWithdrawalParams[i].shares.length, Errors.INPUT_LENGTH_MISMATCH);
+    for (uint256 i = 0; i < unstakeParams.length; i++) {
+      require(unstakeParams[i].pools.length == unstakeParams[i].shares.length, Errors.INPUT_LENGTH_MISMATCH);
       require(
-        queuedWithdrawalParams[i].withdrawer == msg.sender || queuedWithdrawalParams[i].withdrawer == wrappedTokenGateway,
+        unstakeParams[i].withdrawer == msg.sender || unstakeParams[i].withdrawer == wrappedTokenGateway,
         Errors.WITHDRAWER_NOT_STAKER_OR_GATEWAY
       );
 
-      // Remove shares from staker's pools and place pools/shares in queue.
+      // Remove shares from staker's pools and place pools/shares in unstake.
       // If the staker is delegated to an operator, the operator's delegated shares are also reduced
       // NOTE: This will fail if the staker doesn't have the shares implied by the input parameters
-      withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
+      withdrawalRoots[i] = _removeSharesAndUnstake({
         staker: msg.sender,
         operator: operator,
-        withdrawer: queuedWithdrawalParams[i].withdrawer,
-        pools: queuedWithdrawalParams[i].pools,
-        shares: queuedWithdrawalParams[i].shares
+        withdrawer: unstakeParams[i].withdrawer,
+        pools: unstakeParams[i].pools,
+        shares: unstakeParams[i].shares
       });
     }
     return withdrawalRoots;
@@ -275,32 +273,32 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
    * any beaconChainETHPool shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
    * any other pools, which will be transferred to the withdrawer.
    */
-  function completeQueuedWithdrawal(
+  function withdraw(
     Withdrawal calldata withdrawal,
     IERC20[] calldata tokens,
     uint256 middlewareTimesIndex,
     bool receiveAsTokens
-  ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
-    _completeQueuedWithdrawal(withdrawal, tokens, middlewareTimesIndex, receiveAsTokens);
+  ) external onlyWhenNotPaused(PAUSED_WITHDRAW) nonReentrant {
+    _withdraw(withdrawal, tokens, middlewareTimesIndex, receiveAsTokens);
   }
 
   /**
-   * @notice Array-ified version of `completeQueuedWithdrawal`.
+   * @notice Array-ified version of `withdraw`.
    * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
    * @param withdrawals The Withdrawals to complete.
-   * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
-   * @param middlewareTimesIndexes One index to reference per Withdrawal. See `completeQueuedWithdrawal` for the usage of a single index.
-   * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
-   * @dev See `completeQueuedWithdrawal` for relevant dev tags
+   * @param tokens Array of tokens for each Withdrawal. See `withdraw` for the usage of a single array.
+   * @param middlewareTimesIndexes One index to reference per Withdrawal. See `withdraw` for the usage of a single index.
+   * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `withdraw` for the usage of a single boolean.
+   * @dev See `withdraw` for relevant dev tags
    */
-  function completeQueuedWithdrawals(
+  function withdraws(
     Withdrawal[] calldata withdrawals,
     IERC20[][] calldata tokens,
     uint256[] calldata middlewareTimesIndexes,
     bool[] calldata receiveAsTokens
-  ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
+  ) external onlyWhenNotPaused(PAUSED_WITHDRAW) nonReentrant {
     for (uint256 i = 0; i < withdrawals.length; ++i) {
-      _completeQueuedWithdrawal(withdrawals[i], tokens[i], middlewareTimesIndexes[i], receiveAsTokens[i]);
+      _withdraw(withdrawals[i], tokens[i], middlewareTimesIndexes[i], receiveAsTokens[i]);
     }
   }
 
@@ -453,9 +451,9 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
 
   /**
    * @dev commented-out param (middlewareTimesIndex) is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
-   * This param is intended to be passed on to the Slasher contract, but is unused in the M2 release of these contracts, and is thus commented-out.
+   * This param is intended to be passed on to the Slasher contract.
    */
-  function _completeQueuedWithdrawal(
+  function _withdraw(
     Withdrawal calldata withdrawal,
     IERC20[] calldata tokens,
     uint256 /*middlewareTimesIndex*/,
@@ -540,11 +538,11 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   }
 
   /**
-   * @notice Removes `shares` in `pools` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
+   * @notice Removes `shares` in `pools` from `staker` who is currently delegated to `operator` and unstake to the `withdrawer`.
    * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `pools` are also decreased appropriately.
    * @dev If `withdrawer` is not the same address as `staker`, then thirdPartyTransfersForbidden[pool] must be set to false in the PoolController.sol.
    */
-  function _removeSharesAndQueueWithdrawal(
+  function _removeSharesAndUnstake(
     address staker,
     address operator,
     address withdrawer,

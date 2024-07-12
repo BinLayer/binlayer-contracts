@@ -68,8 +68,8 @@ interface IDelegationController is ISignatureUtils {
   }
 
   /**
-   * Struct type used to specify an existing queued withdrawal. Rather than storing the entire struct, only a hash is stored.
-   * In functions that operate on existing queued withdrawals -- e.g. completeQueuedWithdrawal`, the data is resubmitted and the hash of the submitted
+   * Struct type used to specify an withdraw. Rather than storing the entire struct, only a hash is stored.
+   * In functions that operate on existing queued withdrawals -- e.g. withdraw`, the data is resubmitted and the hash of the submitted
    * data is computed by `calculateWithdrawalRoot` and checked against the stored hash in order to confirm the integrity of the submitted data.
    */
   struct Withdrawal {
@@ -89,8 +89,8 @@ interface IDelegationController is ISignatureUtils {
     uint256[] shares;
   }
 
-  struct QueuedWithdrawalParams {
-    // Array of pools that the QueuedWithdrawal contains
+  struct UnstakeParams {
+    // Array of pools that the Unstake contains
     IPool[] pools;
     // Array containing the amount of shares in each Pool in the `pools` array
     uint256[] shares;
@@ -212,7 +212,7 @@ interface IDelegationController is ISignatureUtils {
 
   /**
    * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into the "undelegation limbo" mode of the EigenPodManager
-   * and queues a withdrawal of all of the staker's shares in the PoolController.sol (to the staker), if necessary.
+   * and unstake of all of the staker's shares in the PoolController.sol (to the staker), if necessary.
    * @param staker The account to be undelegated.
    * @return withdrawalRoot The root of the newly queued withdrawal, if a withdrawal was queued. Otherwise just bytes32(0).
    *
@@ -229,7 +229,7 @@ interface IDelegationController is ISignatureUtils {
    *
    * All withdrawn shares/pools are placed in a queue and can be fully withdrawn after a delay.
    */
-  function queueWithdrawals(QueuedWithdrawalParams[] calldata queuedWithdrawalParams) external returns (bytes32[] memory);
+  function unstakes(UnstakeParams[] calldata unstakeParams) external returns (bytes32[] memory);
 
   /**
    * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
@@ -245,23 +245,18 @@ interface IDelegationController is ISignatureUtils {
    * any beaconChainETHPool shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
    * any other pools, which will be transferred to the withdrawer.
    */
-  function completeQueuedWithdrawal(
-    Withdrawal calldata withdrawal,
-    IERC20[] calldata tokens,
-    uint256 middlewareTimesIndex,
-    bool receiveAsTokens
-  ) external;
+  function withdraw(Withdrawal calldata withdrawal, IERC20[] calldata tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) external;
 
   /**
-   * @notice Array-ified version of `completeQueuedWithdrawal`.
+   * @notice Array-ified version of `withdraw`.
    * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
    * @param withdrawals The Withdrawals to complete.
-   * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
-   * @param middlewareTimesIndexes One index to reference per Withdrawal. See `completeQueuedWithdrawal` for the usage of a single index.
-   * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
-   * @dev See `completeQueuedWithdrawal` for relevant dev tags
+   * @param tokens Array of tokens for each Withdrawal. See `withdraw` for the usage of a single array.
+   * @param middlewareTimesIndexes One index to reference per Withdrawal. See `withdraw` for the usage of a single index.
+   * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `withdraw` for the usage of a single boolean.
+   * @dev See `withdraw` for relevant dev tags
    */
-  function completeQueuedWithdrawals(
+  function withdraws(
     Withdrawal[] calldata withdrawals,
     IERC20[][] calldata tokens,
     uint256[] calldata middlewareTimesIndexes,
