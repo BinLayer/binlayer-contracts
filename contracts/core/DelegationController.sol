@@ -10,14 +10,14 @@ import './DelegationControllerStorage.sol';
 
 /**
  * @title DelegationController.sol
- * @notice  This is the contract for delegation in BinLayer. The main functionalities of this contract are
- * - enabling anyone to register as an operator in BinLayer
- * - allowing operators to specify parameters related to stakers who delegate to them
- * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
- * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the PoolController.sol)
+ * @notice  this is the delegation contract for BinLayer. The primary functions of this contract are:
+ * - allowing anyone to register as an operator in BinLayer
+ * - enabling operators to set parameters for stakers who delegate to them
+ * - allowing any staker to delegate their stake to the operator of their choice (each staker can only delegate to one operator at a time)
+ * - allowing a staker to undelegate their assets from the operator they are delegated to (done as part of the withdrawal process, initiated through the PoolController)
  */
 contract DelegationController is Initializable, OwnableUpgradeable, Pausable, DelegationControllerStorage, ReentrancyGuardUpgradeable {
-  // @dev Index for flag that pauses new delegations when set
+  // @dev Flag index that, when set, pauses new delegations
   uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
   // @dev Index for flag that pauses queuing new withdrawals when set.
@@ -230,11 +230,11 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   }
 
   /**
-   * Allows a staker to withdraw some shares. Withdrawn shares/pools are immediately removed
+   * Enables a staker to withdraw a portion of shares. Withdrawn shares/pools are promptly removed.
    * from the staker. If the staker is delegated, withdrawn shares/pools are also removed from
    * their operator.
    *
-   * All withdrawn shares/pools are placed in a queue and can be fully withdrawn after a delay.
+   * All withdrawn shares/pools are queued for complete withdrawal following a specified delay.
    */
   function queueWithdrawals(
     QueuedWithdrawalParams[] calldata queuedWithdrawalParams
