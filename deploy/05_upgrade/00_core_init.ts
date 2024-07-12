@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { COMMON_DEPLOY_PARAMS } from '../../helpers/env';
-import { eNetwork, getContract, PoolController, waitForTx } from '../../helpers';
+import { eNetwork, getContract, waitForTx } from '../../helpers';
 import {
   DELEGATION_CONTROLLER_IMPL_ID,
   DELEGATION_CONTROLLER_PROXY_ID,
@@ -92,7 +92,9 @@ const func: DeployFunction = async function ({
 
   if (wrappedTokenGatewayArtifact) {
     await waitForTx(
-      await delegationControllerInstance.updateWrappedTokenGateway(wrappedTokenGatewayArtifact.address)
+      await delegationControllerInstance.updateWrappedTokenGateway(
+        wrappedTokenGatewayArtifact.address
+      )
     );
     console.log(`[Deployment][INFO] Config gateway ${pools}`);
   }

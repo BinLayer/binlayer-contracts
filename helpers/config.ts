@@ -2,7 +2,7 @@ import { ZERO_ADDRESS } from './constants';
 import { IConfiguration, eBscNetwork } from './types';
 
 export const Configs: IConfiguration = {
-  StrategyConfigs: {
+  PoolConfigs: {
     [eBscNetwork.bscTestnet]: {
       WBNB: {
         tokenAddress: '0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd',
@@ -52,7 +52,7 @@ export const Configs: IConfiguration = {
     [eBscNetwork.bscTestnet]: 60,
     [eBscNetwork.bsc]: 259200,
   },
-  StrategyManagerPausedStatus: {
+  PoolControllerPausedStatus: {
     [eBscNetwork.bscTestnet]: 0,
     [eBscNetwork.bsc]: 0,
   },
