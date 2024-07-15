@@ -418,7 +418,7 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
       // check the signature expiry
       require(approverSignatureAndExpiry.expiry >= block.timestamp, Errors.SIGNATURE_EXPIRED);
       // check that the salt hasn't been used previously, then mark the salt as spent
-      require(!delegationApproverSaltIsSpent[_delegationApprover][approverSalt], Errors.APPROVER_SALT_SPENT);
+      require(!delegationApproverSaltIsSpent[_delegationApprover][approverSalt], Errors.SALT_ALREADY_SPENT);
       delegationApproverSaltIsSpent[_delegationApprover][approverSalt] = true;
 
       // calculate the digest hash

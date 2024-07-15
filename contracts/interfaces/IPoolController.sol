@@ -58,12 +58,7 @@ interface IPoolController {
    * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a pool is not recommended.  This can lead to attack vectors
    *          where the token balance and corresponding pool shares are not in sync upon reentrancy.
    */
-  function depositIntoPoolWithStaker(
-    address staker,
-    IPool pool,
-    IERC20 token,
-    uint256 amount
-  ) external returns (uint256 shares);
+  function depositIntoPoolWithStaker(address staker, IPool pool, IERC20 token, uint256 amount) external returns (uint256 shares);
 
   /**
    * @notice Used for depositing an asset into the specified pool with the resultant shares credited to `staker`,
@@ -121,10 +116,7 @@ interface IPoolController {
    * @param poolsToWhitelist Pools that will be added to the `poolIsWhitelistedForDeposit` mapping (if they aren't in it already)
    * @param thirdPartyTransfersForbiddenValues bool values to set `thirdPartyTransfersForbidden` to for each pool
    */
-  function addPoolsToDepositWhitelist(
-    IPool[] calldata poolsToWhitelist,
-    bool[] calldata thirdPartyTransfersForbiddenValues
-  ) external;
+  function addPoolsToDepositWhitelist(IPool[] calldata poolsToWhitelist, bool[] calldata thirdPartyTransfersForbiddenValues) external;
 
   /**
    * @notice Owner-only function that removes the provided Pools from the 'whitelist' of pools that stakers can deposit into
@@ -140,6 +132,9 @@ interface IPoolController {
 
   /// @notice Returns the address of the `poolWhitelister`
   function poolWhitelister() external view returns (address);
+
+  /// @notice Returns bool for whether or not `pool` is whitelisted for deposit
+  function poolIsWhitelistedForDeposit(IPool pool) external view returns (bool);
 
   /**
    * @notice Returns bool for whether or not `pool` enables credit transfers. i.e enabling

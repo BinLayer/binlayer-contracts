@@ -10,6 +10,7 @@ import '../contracts/core/PoolController.sol';
 import '../contracts/core/Slasher.sol';
 import '../contracts/core/DelegationController.sol';
 import '../contracts/core/AVSDirectory.sol';
+import '../contracts/core/RewardsCoordinator.sol';
 
 import '../contracts/pools/PoolBaseTVLLimits.sol';
 
@@ -47,6 +48,8 @@ contract BinLayerDeployer is Script, Test {
   PoolController public poolControllerImplementation;
   AVSDirectory public avsDirectory;
   AVSDirectory public avsDirectoryImplementation;
+  RewardsCoordinator public rewardsCoordinator;
+  RewardsCoordinator public rewardsCoordinatorImplementation;
   PoolBase public basePoolImplementation;
 
   EmptyContract public emptyContract;
@@ -62,6 +65,17 @@ contract BinLayerDeployer is Script, Test {
   uint256 POOL_CONTROLLER_INIT_PAUSED_STATUS;
   uint256 SLASHER_INIT_PAUSED_STATUS;
   uint256 DELEGATION_INIT_PAUSED_STATUS;
+  uint256 REWARDS_COORDINATOR_INIT_PAUSED_STATUS;
+
+  // RewardsCoordinator
+  uint32 REWARDS_COORDINATOR_MAX_REWARDS_DURATION;
+  uint32 REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH;
+  uint32 REWARDS_COORDINATOR_MAX_FUTURE_LENGTH;
+  uint32 REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP;
+  address REWARDS_COORDINATOR_UPDATER;
+  uint32 REWARDS_COORDINATOR_ACTIVATION_DELAY;
+  uint32 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+  uint32 REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
 
   uint256 DELEGATION_WITHDRAWAL_DELAY_TIMESTAMP;
 
@@ -79,6 +93,22 @@ contract BinLayerDeployer is Script, Test {
     SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, '.slasher.init_paused_status');
     DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, '.delegation.init_paused_status');
     DELEGATION_WITHDRAWAL_DELAY_TIMESTAMP = stdJson.readUint(config_data, '.delegation.init_withdrawal_delay_blocks');
+    REWARDS_COORDINATOR_INIT_PAUSED_STATUS = stdJson.readUint(config_data, '.rewardsCoordinator.init_paused_status');
+    REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
+      stdJson.readUint(config_data, '.rewardsCoordinator.CALCULATION_INTERVAL_SECONDS')
+    );
+    REWARDS_COORDINATOR_MAX_REWARDS_DURATION = uint32(stdJson.readUint(config_data, '.rewardsCoordinator.MAX_REWARDS_DURATION'));
+    REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(config_data, '.rewardsCoordinator.MAX_RETROACTIVE_LENGTH'));
+    REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(config_data, '.rewardsCoordinator.MAX_FUTURE_LENGTH'));
+    REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(stdJson.readUint(config_data, '.rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP'));
+    REWARDS_COORDINATOR_UPDATER = stdJson.readAddress(config_data, '.rewardsCoordinator.rewards_updater_address');
+    REWARDS_COORDINATOR_ACTIVATION_DELAY = uint32(stdJson.readUint(config_data, '.rewardsCoordinator.activation_delay'));
+    REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
+      stdJson.readUint(config_data, '.rewardsCoordinator.calculation_interval_seconds')
+    );
+    REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
+      stdJson.readUint(config_data, '.rewardsCoordinator.global_operator_commission_bips')
+    );
 
     // tokens to deploy pools for
     PoolConfig[] memory poolConfigs;
@@ -117,12 +147,24 @@ contract BinLayerDeployer is Script, Test {
     poolController = PoolController(address(new TransparentUpgradeableProxy(address(emptyContract), address(binlayerProxyAdmin), '')));
     avsDirectory = AVSDirectory(address(new TransparentUpgradeableProxy(address(emptyContract), address(binlayerProxyAdmin), '')));
     slasher = Slasher(address(new TransparentUpgradeableProxy(address(emptyContract), address(binlayerProxyAdmin), '')));
+    rewardsCoordinator = RewardsCoordinator(
+      address(new TransparentUpgradeableProxy(address(emptyContract), address(binlayerProxyAdmin), ''))
+    );
 
     // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
     delegationImplementation = new DelegationController(poolController, slasher);
     poolControllerImplementation = new PoolController(delegation, slasher);
     avsDirectoryImplementation = new AVSDirectory(delegation);
     slasherImplementation = new Slasher(poolController, delegation);
+    rewardsCoordinatorImplementation = new RewardsCoordinator(
+      delegation,
+      poolController,
+      REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+      REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+      REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+      REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+      REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
+    );
 
     // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
     {
@@ -163,6 +205,19 @@ contract BinLayerDeployer is Script, Test {
       address(avsDirectoryImplementation),
       abi.encodeWithSelector(AVSDirectory.initialize.selector, executorMultisig, binlayerPauserReg, 0)
     );
+    binlayerProxyAdmin.upgradeAndCall(
+      ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))),
+      address(rewardsCoordinatorImplementation),
+      abi.encodeWithSelector(
+        RewardsCoordinator.initialize.selector,
+        executorMultisig,
+        binlayerPauserReg,
+        REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
+        REWARDS_COORDINATOR_UPDATER,
+        REWARDS_COORDINATOR_ACTIVATION_DELAY,
+        REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS
+      )
+    );
 
     // deploy PoolBaseTVLLimits contract implementation
     basePoolImplementation = new PoolBaseTVLLimits(poolController);
@@ -193,8 +248,13 @@ contract BinLayerDeployer is Script, Test {
     vm.stopBroadcast();
 
     // CHECK CORRECTNESS OF DEPLOYMENT
-    _verifyContractsPointAtOneAnother(delegationImplementation, poolControllerImplementation, slasherImplementation);
-    _verifyContractsPointAtOneAnother(delegation, poolController, slasher);
+    _verifyContractsPointAtOneAnother(
+      delegationImplementation,
+      poolControllerImplementation,
+      slasherImplementation,
+      rewardsCoordinatorImplementation
+    );
+    _verifyContractsPointAtOneAnother(delegation, poolController, slasher, rewardsCoordinator);
     _verifyImplementationsSetCorrectly();
     _verifyInitialOwners();
     _checkPauserInitializations();
@@ -226,6 +286,8 @@ contract BinLayerDeployer is Script, Test {
     vm.serializeAddress(deployed_addresses, 'avsDirectoryImplementation', address(avsDirectoryImplementation));
     vm.serializeAddress(deployed_addresses, 'poolController', address(poolController));
     vm.serializeAddress(deployed_addresses, 'poolControllerImplementation', address(poolControllerImplementation));
+    vm.serializeAddress(deployed_addresses, 'rewardsCoordinator', address(rewardsCoordinator));
+    vm.serializeAddress(deployed_addresses, 'rewardsCoordinatorImplementation', address(rewardsCoordinatorImplementation));
     vm.serializeAddress(deployed_addresses, 'basePoolImplementation', address(basePoolImplementation));
     vm.serializeAddress(deployed_addresses, 'emptyContract', address(emptyContract));
     string memory deployed_addresses_output = vm.serializeString(deployed_addresses, 'pools', deployed_pools_output);
@@ -250,13 +312,17 @@ contract BinLayerDeployer is Script, Test {
   function _verifyContractsPointAtOneAnother(
     DelegationController delegationContract,
     PoolController poolControllerContract,
-    Slasher /*slasherContract*/
+    Slasher /*slasherContract*/,
+    RewardsCoordinator rewardsCoordinatorContract
   ) internal view {
     require(delegationContract.slasher() == slasher, 'delegation: slasher address not set correctly');
     require(delegationContract.poolController() == poolController, 'delegation: poolController address not set correctly');
 
     require(poolControllerContract.slasher() == slasher, 'poolController: slasher address not set correctly');
     require(poolControllerContract.delegation() == delegation, 'poolController: delegation address not set correctly');
+    require(rewardsCoordinatorContract.delegationController() == delegation, 'rewardsCoordinator: delegation address not set correctly');
+
+    require(rewardsCoordinatorContract.poolController() == poolController, 'rewardsCoordinator: poolController address not set correctly');
   }
 
   function _verifyImplementationsSetCorrectly() internal view {
@@ -273,6 +339,11 @@ contract BinLayerDeployer is Script, Test {
     require(
       binlayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(slasher)))) == address(slasherImplementation),
       'slasher: implementation set incorrectly'
+    );
+    require(
+      binlayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(rewardsCoordinator)))) ==
+        address(rewardsCoordinatorImplementation),
+      'rewardsCoordinator: implementation set incorrectly'
     );
 
     for (uint256 i = 0; i < deployedPoolArray.length; ++i) {
@@ -298,6 +369,7 @@ contract BinLayerDeployer is Script, Test {
     require(poolController.pauserRegistry() == binlayerPauserReg, 'poolController: pauser registry not set correctly');
     // removing slasher requirements because there is no slasher as part of m2-mainnet release
     // require(slasher.pauserRegistry() == binlayerPauserReg, "slasher: pauser registry not set correctly");
+    require(rewardsCoordinator.pauserRegistry() == binlayerPauserReg, 'rewardsCoordinator: pauser registry not set correctly');
     require(binlayerPauserReg.isPauser(operationsMultisig), 'pauserRegistry: operationsMultisig is not pauser');
     require(binlayerPauserReg.isPauser(executorMultisig), 'pauserRegistry: executorMultisig is not pauser');
     require(binlayerPauserReg.isPauser(pauserMultisig), 'pauserRegistry: pauserMultisig is not pauser');

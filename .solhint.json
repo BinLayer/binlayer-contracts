@@ -37,6 +37,7 @@
         "no-global-import": "off",
         "immutable-vars-naming": "off",
         "private-vars-leading-underscore": "off",
-        "state-visibility": "off"
+        "state-visibility": "off",
+        "func-param-name-mixedcase": "off"
     }
 }

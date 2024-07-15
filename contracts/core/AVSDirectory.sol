@@ -7,6 +7,7 @@ import '@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import '../permissions/Pausable.sol';
 import '../libraries/EIP1271SignatureUtils.sol';
 import './AVSDirectoryStorage.sol';
+import '../helpers/Errors.sol';
 
 contract AVSDirectory is Initializable, OwnableUpgradeable, Pausable, AVSDirectoryStorage, ReentrancyGuardUpgradeable {
   // @dev Index for flag that pauses operator register/deregister to avs when set.
@@ -15,11 +16,9 @@ contract AVSDirectory is Initializable, OwnableUpgradeable, Pausable, AVSDirecto
   // @dev Chain ID at the time of contract deployment
   uint256 internal immutable ORIGINAL_CHAIN_ID;
 
-  /**
-   *
-   *                         INITIALIZING FUNCTIONS
-   *
-   */
+  /*******************************************************************************
+                            INITIALIZING FUNCTIONS
+    *******************************************************************************/
 
   /**
    * @dev Initializes the immutable addresses of the delegation controller contracts
@@ -39,11 +38,9 @@ contract AVSDirectory is Initializable, OwnableUpgradeable, Pausable, AVSDirecto
     _transferOwnership(initialOwner);
   }
 
-  /**
-   *
-   *                         EXTERNAL FUNCTIONS
-   *
-   */
+  /*******************************************************************************
+                            EXTERNAL FUNCTIONS 
+    *******************************************************************************/
 
   /**
    * @notice Called by the AVS's service manager contract to register an operator with the avs.
@@ -54,13 +51,10 @@ contract AVSDirectory is Initializable, OwnableUpgradeable, Pausable, AVSDirecto
     address operator,
     ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
   ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-    require(operatorSignature.expiry >= block.timestamp, 'AVSDirectory.registerOperatorToAVS: operator signature expired');
-    require(
-      avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
-      'AVSDirectory.registerOperatorToAVS: operator already registered'
-    );
-    require(!operatorSaltIsSpent[operator][operatorSignature.salt], 'AVSDirectory.registerOperatorToAVS: salt already spent');
-    require(delegation.isOperator(operator), 'AVSDirectory.registerOperatorToAVS: operator not registered to EigenLayer yet');
+    require(operatorSignature.expiry >= block.timestamp, Errors.SIGNATURE_EXPIRED);
+    require(avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED, Errors.OPERATOR_ALREADY_REGISTERED);
+    require(!operatorSaltIsSpent[operator][operatorSignature.salt], Errors.SALT_ALREADY_SPENT);
+    require(delegation.isOperator(operator), Errors.NOT_REGISTERED_IN_BINLAYER);
 
     // Calculate the digest hash
     bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
@@ -88,10 +82,7 @@ contract AVSDirectory is Initializable, OwnableUpgradeable, Pausable, AVSDirecto
    * @param operator The address of the operator to deregister.
    */
   function deregisterOperatorFromAVS(address operator) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-    require(
-      avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
-      'AVSDirectory.deregisterOperatorFromAVS: operator not registered'
-    );
+    require(avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED, Errors.NOT_REGISTERED_IN_BINLAYER);
 
     // Set the operator as deregistered
     avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
@@ -112,15 +103,13 @@ contract AVSDirectory is Initializable, OwnableUpgradeable, Pausable, AVSDirecto
    * @param salt A unique and single use value associated with the approver signature.
    */
   function cancelSalt(bytes32 salt) external {
-    require(!operatorSaltIsSpent[msg.sender][salt], 'AVSDirectory.cancelSalt: cannot cancel spent salt');
+    require(!operatorSaltIsSpent[msg.sender][salt], Errors.CANNOT_CANCEL_SPENT_SALT);
     operatorSaltIsSpent[msg.sender][salt] = true;
   }
 
-  /**
-   *
-   *                         VIEW FUNCTIONS
-   *
-   */
+  /*******************************************************************************
+                            VIEW FUNCTIONS
+    *******************************************************************************/
 
   /**
    * @notice Calculates the digest hash to be signed by an operator to register with an AVS
