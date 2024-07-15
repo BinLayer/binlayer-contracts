@@ -1,14 +1,5 @@
 import { task } from 'hardhat/config';
-import {
-  DelegationController,
-  eNetwork,
-  FORK,
-  getContract,
-  PauserRegistry,
-  waitForTx,
-  WrappedTokenGateway,
-  ZERO_ADDRESS,
-} from '../../helpers';
+import { eNetwork, FORK, getContract, waitForTx, ZERO_ADDRESS } from '../../helpers';
 import {
   DELEGATION_CONTROLLER_IMPL_ID,
   DELEGATION_CONTROLLER_PROXY_ID,
@@ -23,6 +14,7 @@ import {
 import { Configs } from '../../helpers/config';
 import { getParamPerNetwork } from '../../helpers/config-helpers';
 import { parseUnits } from 'ethers/lib/utils';
+import { PauserRegistry } from '../../typechain';
 
 task(`config-pool`, `Config pool`).setAction(async (_, hre) => {
   if (!hre.network.config.chainId) {
@@ -34,7 +26,9 @@ task(`config-pool`, `Config pool`).setAction(async (_, hre) => {
     'PoolManager',
     PoolManagerProxyArtifact.address
   );
-  const DelegationControllerProxyArtifact = await hre.deployments.get(DELEGATION_CONTROLLER_PROXY_ID);
+  const DelegationControllerProxyArtifact = await hre.deployments.get(
+    DELEGATION_CONTROLLER_PROXY_ID
+  );
   const delegationControllerInstance = await hre.ethers.getContractAt(
     'DelegationController',
     DelegationControllerProxyArtifact.address
@@ -46,16 +40,10 @@ task(`config-pool`, `Config pool`).setAction(async (_, hre) => {
   );
 
   await waitForTx(
-    await poolManagerInstance.addPoolsToDepositWhitelist(
-      [PoolProxyArtifact.address],
-      [false]
-    )
+    await poolManagerInstance.addPoolsToDepositWhitelist([PoolProxyArtifact.address], [false])
   );
   await waitForTx(
-    await delegationControllerInstance.setPoolWithdrawalDelay(
-      [PoolProxyArtifact.address],
-      [180]
-    )
+    await delegationControllerInstance.setPoolWithdrawalDelay([PoolProxyArtifact.address], [180])
   );
 
   const pauserRegistry = (await getContract(PAUSER_REGISTRY_ID)) as PauserRegistry;
@@ -63,9 +51,7 @@ task(`config-pool`, `Config pool`).setAction(async (_, hre) => {
   console.log(await pauserRegistry.unpauser());
   console.log(await poolInstance.getTVLLimits());
   console.log(await poolInstance.underlyingToken());
-  console.log(
-    await poolManagerInstance.poolIsWhitelistedForDeposit(poolInstance.address)
-  );
+  console.log(await poolManagerInstance.poolIsWhitelistedForDeposit(poolInstance.address));
   console.log(await delegationControllerInstance.poolWithdrawalDelay(poolInstance.address));
   console.log(await delegationControllerInstance.getWithdrawalDelay([poolInstance.address]));
   console.log(await delegationControllerInstance.minWithdrawalDelay());

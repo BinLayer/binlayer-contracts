@@ -5,13 +5,10 @@
   "author": "BinLayer",
   "license": "LGPL-3.0",
   "scripts": {},
-  "dependencies": {
-    "@openzeppelin/contracts": "^4.8.0",
-    "@openzeppelin/contracts-upgradeable": "^4.8.0",
-    "@openzeppelin/upgrades-core": "1.24.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
+    "@nomicfoundation/hardhat-foundry": "^1.1.2",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@nomiclabs/hardhat-ethers": "^2.0.0",

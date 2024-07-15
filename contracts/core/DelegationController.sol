@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0
 pragma solidity 0.8.20;
 
-import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol';
+import '@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol';
+import '@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol';
+import '@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol';
 import '../permissions/Pausable.sol';
 import '../libraries/EIP1271SignatureUtils.sol';
 import './DelegationControllerStorage.sol';

@@ -6,8 +6,8 @@ import '../interfaces/IDelegationController.sol';
 import '../interfaces/IPoolController.sol';
 import '../libraries/StructuredLinkedList.sol';
 import '../permissions/Pausable.sol';
-import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import '@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol';
+import '@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol';
 
 /**
  * @notice This contract is not in use as of the BinLayer release.

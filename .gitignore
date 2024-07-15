@@ -16,6 +16,13 @@ artifacts
 
 subgraph.yaml
 
+# Foundry
+/out
+/cache_forge
+
+# Ignores development broadcast logs
+/broadcast
+
 .vscode
 
 

@@ -3,12 +3,10 @@ import { eNetwork, FORK, getContract, waitForTx, ZERO_ADDRESS } from '../../help
 import {
   DELEGATION_CONTROLLER_IMPL_ID,
   DELEGATION_CONTROLLER_PROXY_ID,
-  DELEGATION_MANAGER_PROXY_ID,
   POOL_CONTROLLER_IMPL_ID,
   POOL_CONTROLLER_PROXY_ID,
   PROXY_ADMIN_ID,
   SLASHER_PROXY_ID,
-  STRATEGY_MANAGER_PROXY_ID,
   WRAPPED_TOKEN_GATEWAY_ID,
 } from '../../helpers/deploy-ids';
 import { Configs } from '../../helpers/config';
@@ -26,25 +24,25 @@ task(`upgrade-core`, `Upgrade PoolController & DelegationController`).setAction(
   const { deployer } = await hre.getNamedAccounts();
   const network = (FORK ? FORK : hre.network.name) as eNetwork;
 
-  const { address: strategyManagerProxyAddress } = await hre.deployments.get(
-    STRATEGY_MANAGER_PROXY_ID
+  const { address: poolControllerProxyAddress } = await hre.deployments.get(
+    POOL_CONTROLLER_PROXY_ID
   );
-  const { address: delegationManagerProxyAddress } = await hre.deployments.get(
-    DELEGATION_MANAGER_PROXY_ID
+  const { address: delegationControllerProxyAddress } = await hre.deployments.get(
+    DELEGATION_CONTROLLER_PROXY_ID
   );
   const { address: slasherAddress } = await hre.deployments.get(SLASHER_PROXY_ID);
 
   const poolControllerImpl = await hre.deployments.deploy(POOL_CONTROLLER_IMPL_ID, {
     contract: 'PoolController',
     from: deployer,
-    args: [delegationManagerProxyAddress, slasherAddress],
+    args: [delegationControllerProxyAddress, slasherAddress],
   });
   console.log(`[Deployment][INFO] PoolController impl deployed ${poolControllerImpl.address}`);
 
   const delegationControllerImpl = await hre.deployments.deploy(DELEGATION_CONTROLLER_IMPL_ID, {
     contract: 'DelegationController',
     from: deployer,
-    args: [strategyManagerProxyAddress, slasherAddress],
+    args: [poolControllerProxyAddress, slasherAddress],
   });
   console.log(
     `[Deployment][INFO] DelegationController impl deployed ${delegationControllerImpl.address}`
@@ -55,7 +53,7 @@ task(`upgrade-core`, `Upgrade PoolController & DelegationController`).setAction(
   const proxyAdmin = await getContract(PROXY_ADMIN_ID);
   await waitForTx(
     await proxyAdmin.upgrade(
-      strategyManagerProxyAddress,
+      poolControllerProxyAddress,
       (
         await hre.deployments.get(POOL_CONTROLLER_IMPL_ID)
       ).address
@@ -65,7 +63,7 @@ task(`upgrade-core`, `Upgrade PoolController & DelegationController`).setAction(
 
   await waitForTx(
     await proxyAdmin.upgrade(
-      delegationManagerProxyAddress,
+      delegationControllerProxyAddress,
       (
         await hre.deployments.get(DELEGATION_CONTROLLER_IMPL_ID)
       ).address

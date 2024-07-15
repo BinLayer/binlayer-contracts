@@ -1,11 +1,10 @@
 import { task } from 'hardhat/config';
 import { eNetwork, FORK, getContract, waitForTx, ZERO_ADDRESS } from '../../helpers';
 import {
-  DELEGATION_MANAGER_PROXY_ID,
+  POOL_CONTROLLER_PROXY_ID,
   POOL_IMPL_ID,
+  POOL_PROXY_ID,
   PROXY_ADMIN_ID,
-  STRATEGY_MANAGER_PROXY_ID,
-  STRATEGY_PROXY_ID,
 } from '../../helpers/deploy-ids';
 
 task(`upgrade-pool`, `Upgrade Pool`)
@@ -23,17 +22,15 @@ task(`upgrade-pool`, `Upgrade Pool`)
 
     const network = (FORK ? FORK : hre.network.name) as eNetwork;
 
-    const { address: strategyProxyAddress } = await hre.deployments.get(
-      `${symbol}${STRATEGY_PROXY_ID}`
-    );
-    const { address: strategyManagerProxyAddress } = await hre.deployments.get(
-      STRATEGY_MANAGER_PROXY_ID
+    const { address: poolProxyAddress } = await hre.deployments.get(`${symbol}${POOL_PROXY_ID}`);
+    const { address: poolControllerProxyAddress } = await hre.deployments.get(
+      POOL_CONTROLLER_PROXY_ID
     );
 
     const poolImpl = await hre.deployments.deploy(POOL_IMPL_ID, {
       from: deployer,
       contract: 'PoolBaseTVLLimits',
-      args: [strategyManagerProxyAddress],
+      args: [poolControllerProxyAddress],
     });
 
     console.log(`[Deployment][INFO] Pool impl deployed ${poolImpl.address}`);
@@ -43,7 +40,7 @@ task(`upgrade-pool`, `Upgrade Pool`)
     const proxyAdmin = await getContract(PROXY_ADMIN_ID);
     await waitForTx(
       await proxyAdmin.upgrade(
-        strategyProxyAddress,
+        poolControllerProxyAddress,
         (
           await hre.deployments.get(POOL_IMPL_ID)
         ).address

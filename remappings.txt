@@ -1,0 +1,11 @@
+@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable/
+@openzeppelin/=lib/openzeppelin-contracts/
+ds-test/=lib/openzeppelin-contracts-upgradeable/lib/forge-std/lib/ds-test/src/
+erc4626-tests/=lib/openzeppelin-contracts-upgradeable/lib/erc4626-tests/
+eth-gas-reporter/=node_modules/eth-gas-reporter/
+ethpm-registry/=node_modules/ethpm-registry/
+ethpm-spec/=node_modules/ethpm-spec/
+ethpm/=node_modules/ethpm/
+forge-std/=lib/forge-std/src/
+hardhat-deploy/=node_modules/hardhat-deploy/
+hardhat/=node_modules/hardhat/

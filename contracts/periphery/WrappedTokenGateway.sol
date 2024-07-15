@@ -52,7 +52,7 @@ contract WrappedTokenGateway is IWrappedTokenGateway, Ownable {
       }
     }
     uint256 beforeBalance = wrappedToken.balanceOf(address(this));
-    delegationController.completeQueuedWithdrawals(withdrawals, tokens, middlewareTimesIndexs, receiveAsTokens);
+    delegationController.withdraws(withdrawals, tokens, middlewareTimesIndexs, receiveAsTokens);
     uint256 afterBalance = wrappedToken.balanceOf(address(this));
     uint256 amountToWithdraw = afterBalance - beforeBalance;
     wrappedToken.withdraw(amountToWithdraw);

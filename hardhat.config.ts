@@ -16,6 +16,7 @@ import 'hardhat-contract-sizer';
 import 'hardhat-abi-exporter';
 import 'hardhat-gas-reporter';
 import '@nomiclabs/hardhat-ethers';
+import '@nomicfoundation/hardhat-foundry';
 
 const SKIP_LOAD = process.env.SKIP_LOAD === 'true';
 const TASK_FOLDERS = ['misc'];

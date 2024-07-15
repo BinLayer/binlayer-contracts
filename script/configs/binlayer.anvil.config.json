@@ -1,0 +1,19 @@
+{
+    "multisig_addresses": {
+        "operationsMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "pauserMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "executorMultisig": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    },
+    "pools": [],
+    "poolController": {
+        "init_paused_status": 0,
+        "init_withdrawal_delay_blocks": 1
+    },
+    "slasher": {
+        "init_paused_status": 0
+    },
+    "delegation": {
+        "init_paused_status": 0,
+        "init_withdrawal_delay_blocks": 1
+    }
+}
