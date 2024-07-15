@@ -12,8 +12,8 @@ interface IPool {
    * @notice Used to deposit tokens into this Pool
    * @param token is the ERC20 token being deposited
    * @param amount is the amount of token being deposited
-   * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
-   * `depositIntoPool` function, and individual share balances are recorded in the strategyManager as well.
+   * @dev This function is only callable by the poolController contract. It is invoked inside of the poolController's
+   * `depositIntoPool` function, and individual share balances are recorded in the poolController as well.
    * @return newShares is the number of new shares issued at the current exchange ratio.
    */
   function deposit(IERC20 token, uint256 amount) external returns (uint256);
@@ -23,8 +23,8 @@ interface IPool {
    * @param recipient is the address to receive the withdrawn funds
    * @param token is the ERC20 token being transferred out
    * @param amountShares is the amount of shares being withdrawn
-   * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
-   * other functions, and individual share balances are recorded in the strategyManager as well.
+   * @dev This function is only callable by the poolController contract. It is invoked inside of the poolController's
+   * other functions, and individual share balances are recorded in the poolController as well.
    */
   function withdraw(address recipient, IERC20 token, uint256 amountShares) external;
 
@@ -54,7 +54,7 @@ interface IPool {
 
   /**
    * @notice convenience function for fetching the current total shares of `user` in this strategy, by
-   * querying the `strategyManager` contract
+   * querying the `poolController` contract
    */
   function shares(address user) external view returns (uint256);
 

@@ -48,7 +48,7 @@ task(`upgrade-core`, `Upgrade PoolController & DelegationController`).setAction(
     `[Deployment][INFO] DelegationController impl deployed ${delegationControllerImpl.address}`
   );
 
-  // MultiSig call DelegationManagerProxy updateWrappedTokenGateway
+  // MultiSig call DelegationControllerProxy updateWrappedTokenGateway
 
   const proxyAdmin = await getContract(PROXY_ADMIN_ID);
   await waitForTx(
@@ -59,7 +59,7 @@ task(`upgrade-core`, `Upgrade PoolController & DelegationController`).setAction(
       ).address
     )
   );
-  console.log('StrategyManager upgrade successful!');
+  console.log('PoolController upgrade successful!');
 
   await waitForTx(
     await proxyAdmin.upgrade(
@@ -69,5 +69,5 @@ task(`upgrade-core`, `Upgrade PoolController & DelegationController`).setAction(
       ).address
     )
   );
-  console.log('DelegationManager upgrade successful!');
+  console.log('DelegationController upgrade successful!');
 });

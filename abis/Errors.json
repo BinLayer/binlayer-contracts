@@ -27,7 +27,20 @@
   },
   {
     "inputs": [],
-    "name": "APPROVER_SALT_SPENT",
+    "name": "AMOUNT_CANNOT_BE_ZERO",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "AMOUNT_TOO_LARGE",
     "outputs": [
       {
         "internalType": "string",
@@ -79,6 +92,32 @@
   },
   {
     "inputs": [],
+    "name": "CANNOT_BE_IN_THE_FEATURE",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CANNOT_CANCEL_SPENT_SALT",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "CANNOT_UNDELEGATE_OPERATOR",
     "outputs": [
       {
@@ -93,6 +132,19 @@
   {
     "inputs": [],
     "name": "CONTRACT_PAUSED",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CUMULATIVE_EARNINGS_MUST_BE_GREATER_THAN_CUMULATIVE_LAIMED",
     "outputs": [
       {
         "internalType": "string",
@@ -144,6 +196,32 @@
   },
   {
     "inputs": [],
+    "name": "DURATION_EXCEEDS_MAX_REWARDS_DURATION",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "DURATION_MUST_BE_MULTIPLE_OF_CALCULATION_INTERVAL_SECONDS",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "INDEX_PAUSED",
     "outputs": [
       {
@@ -183,7 +261,85 @@
   },
   {
     "inputs": [],
+    "name": "INVALID_EARNER_CLAIM_PROOF",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "INVALID_EARNER_LEAF_INDEX",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "INVALID_PAUSE",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "INVALID_POOL_CONSIDERED",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "INVALID_ROOT_INDEX",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "INVALID_TOKEN_CLAIM_PROOF",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "INVALID_TOKEN_LEAF_INDEX",
     "outputs": [
       {
         "internalType": "string",
@@ -274,6 +430,45 @@
   },
   {
     "inputs": [],
+    "name": "NEW_ROOT_MUST_BE_NEWER_CALCULATED_PERIOD",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "NOT_CLAIMER",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "NOT_CREATE_REWARDS_FOR_ALL_SUBMITTER",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "NOT_DELEGATION_CONTROLLER",
     "outputs": [
       {
@@ -326,7 +521,33 @@
   },
   {
     "inputs": [],
+    "name": "NOT_REWARDS_UPDATER",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "NOT_UNPAUSER",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "NO_POOLS_SET",
     "outputs": [
       {
         "internalType": "string",
@@ -417,6 +638,19 @@
   },
   {
     "inputs": [],
+    "name": "POOLS_MUST_BE_ASCENDING",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "POOL_NOT_FOUND",
     "outputs": [
       {
@@ -456,6 +690,84 @@
   },
   {
     "inputs": [],
+    "name": "ROOT_ALREADY_ACTIVATED",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ROOT_ALREADY_DISABLED",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ROOT_IS_DISABLED",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ROOT_NOT_ACTIVATED_YET",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ROOT_NOT_FOUND",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SALT_ALREADY_SPENT",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "SHARE_AMOUNT_TOO_HIGH",
     "outputs": [
       {
@@ -483,6 +795,45 @@
   {
     "inputs": [],
     "name": "STAKER_MUST_BE_DELEGATED",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "STARTTIMESTAMP_MUST_BE_MULTIPLE_OF_CALCULATION_INTERVAL_SECONDS",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "STARTTIMESTAMP_TOO_FAR_IN_THE_FUTURE",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "STARTTIMESTAMP_TOO_FAR_IN_THE_PAST",
     "outputs": [
       {
         "internalType": "string",

@@ -3,7 +3,7 @@
     "inputs": [
       {
         "internalType": "contract IPoolController",
-        "name": "_strategyManager",
+        "name": "_poolController",
         "type": "address"
       }
     ],

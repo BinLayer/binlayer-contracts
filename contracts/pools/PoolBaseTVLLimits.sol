@@ -23,7 +23,7 @@ contract PoolBaseTVLLimits is PoolBase {
 
   /// solhint-disable-next-line no-empty-blocks
   /// @custom:oz-upgrades-unsafe-allow constructor
-  constructor(IPoolController _strategyManager) PoolBase(_strategyManager) {}
+  constructor(IPoolController _poolController) PoolBase(_poolController) {}
 
   function initialize(
     uint256 _maxPerDeposit,
