@@ -58,7 +58,7 @@ export interface SymbolMap<T> {
   [symbol: string]: T;
 }
 
-export interface StrategyConfig {
+export interface PoolConfig {
   tokenAddress: tEthereumAddress;
   tokenName: string;
   tokenSymbol: string;
@@ -68,7 +68,7 @@ export interface StrategyConfig {
 }
 
 export interface IConfiguration {
-  PoolConfigs: iParamsPerNetwork<SymbolMap<StrategyConfig>>;
+  PoolConfigs: iParamsPerNetwork<SymbolMap<PoolConfig>>;
   MinWithdrawalDelay: iParamsPerNetwork<number>;
   PoolControllerPausedStatus: iParamsPerNetwork<BigNumberish>;
   DelegationControllerPausedStatus: iParamsPerNetwork<BigNumberish>;

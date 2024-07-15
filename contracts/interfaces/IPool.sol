@@ -29,7 +29,7 @@ interface IPool {
   function withdraw(address recipient, IERC20 token, uint256 amountShares) external;
 
   /**
-   * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
+   * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this pool.
    * @notice In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
    * @param amountShares is the amount of shares to calculate its conversion into the underlying token
    * @return The amount of underlying tokens corresponding to the input `amountShares`
@@ -38,9 +38,9 @@ interface IPool {
   function sharesToUnderlying(uint256 amountShares) external returns (uint256);
 
   /**
-   * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
+   * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this pool.
    * @notice In contrast to `underlyingToSharesView`, this function **may** make state modifications
-   * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
+   * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into pool shares
    * @return The amount of underlying tokens corresponding to the input `amountShares`
    * @dev Implementation for these functions in particular may vary significantly for different strategies
    */
@@ -48,18 +48,18 @@ interface IPool {
 
   /**
    * @notice convenience function for fetching the current underlying value of all of the `user`'s shares in
-   * this strategy. In contrast to `userUnderlyingView`, this function **may** make state modifications
+   * this pool. In contrast to `userUnderlyingView`, this function **may** make state modifications
    */
   function userUnderlying(address user) external returns (uint256);
 
   /**
-   * @notice convenience function for fetching the current total shares of `user` in this strategy, by
+   * @notice convenience function for fetching the current total shares of `user` in this pool, by
    * querying the `poolController` contract
    */
   function shares(address user) external view returns (uint256);
 
   /**
-   * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
+   * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this pool.
    * @notice In contrast to `sharesToUnderlying`, this function guarantees no state modifications
    * @param amountShares is the amount of shares to calculate its conversion into the underlying token
    * @return The amount of shares corresponding to the input `amountUnderlying`
@@ -68,9 +68,9 @@ interface IPool {
   function sharesToUnderlyingView(uint256 amountShares) external view returns (uint256);
 
   /**
-   * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
+   * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this pool.
    * @notice In contrast to `underlyingToShares`, this function guarantees no state modifications
-   * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
+   * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into pool shares
    * @return The amount of shares corresponding to the input `amountUnderlying`
    * @dev Implementation for these functions in particular may vary significantly for different strategies
    */
@@ -78,7 +78,7 @@ interface IPool {
 
   /**
    * @notice convenience function for fetching the current underlying value of all of the `user`'s shares in
-   * this strategy. In contrast to `userUnderlying`, this function guarantees no state modifications
+   * this pool. In contrast to `userUnderlying`, this function guarantees no state modifications
    */
   function userUnderlyingView(address user) external view returns (uint256);
 
@@ -88,6 +88,6 @@ interface IPool {
   /// @notice The total number of extant shares in this Pool
   function totalShares() external view returns (uint256);
 
-  /// @notice Returns either a brief string explaining the strategy's goal & purpose, or a link to metadata that explains in more detail.
+  /// @notice Returns either a brief string explaining the pool's goal & purpose, or a link to metadata that explains in more detail.
   function explanation() external view returns (string memory);
 }

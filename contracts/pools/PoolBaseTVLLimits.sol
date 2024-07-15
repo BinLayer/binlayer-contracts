@@ -9,10 +9,10 @@ import './PoolBase.sol';
  * these functions purposefully do not take the TVL limit into account.
  */
 contract PoolBaseTVLLimits is PoolBase {
-  /// The maximum deposit (in underlyingToken) that this strategy will accept per deposit
+  /// The maximum deposit (in underlyingToken) that this pool will accept per deposit
   uint256 public maxPerDeposit;
 
-  /// The maximum deposits (in underlyingToken) that this strategy will hold
+  /// The maximum deposits (in underlyingToken) that this pool will hold
   uint256 public maxTotalDeposits;
 
   /// @notice Emitted when `maxPerDeposit` value is updated from `previousValue` to `newValue`
@@ -36,7 +36,7 @@ contract PoolBaseTVLLimits is PoolBase {
   }
 
   /**
-   * @notice Sets the maximum deposits (in underlyingToken) that this strategy will hold and accept per deposit
+   * @notice Sets the maximum deposits (in underlyingToken) that this pool will hold and accept per deposit
    * @param newMaxTotalDeposits The new maximum deposits
    * @dev Callable only by the unpauser of this contract
    * @dev We note that there is a potential race condition between a call to this function that lowers either or both of these limits and call(s)

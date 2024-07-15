@@ -15,19 +15,13 @@ contract ListaGateway is IListaGateway, Ownable {
 
   IERC20 internal immutable slisBNB;
   IListaStakeManager internal immutable listaStakeManager;
-  IPool internal immutable strategy;
+  IPool internal immutable pool;
   IPoolController internal immutable poolController;
 
-  constructor(
-    address _slisBNB,
-    address _owner,
-    IListaStakeManager _listaStakeManager,
-    IPool _strategy,
-    IPoolController _poolController
-  ) {
+  constructor(address _slisBNB, address _owner, IListaStakeManager _listaStakeManager, IPool _pool, IPoolController _poolController) {
     slisBNB = IERC20(_slisBNB);
     listaStakeManager = _listaStakeManager;
-    strategy = _strategy;
+    pool = _pool;
     poolController = _poolController;
     _transferOwnership(_owner);
     IERC20(_slisBNB).approve(address(poolController), type(uint256).max);
@@ -38,7 +32,7 @@ contract ListaGateway is IListaGateway, Ownable {
     listaStakeManager.deposit{value: msg.value}();
     uint256 afterBalance = slisBNB.balanceOf(address(this));
     uint256 amountToStake = afterBalance - beforeBalance;
-    poolController.depositIntoPoolWithStaker(msg.sender, strategy, slisBNB, amountToStake);
+    poolController.depositIntoPoolWithStaker(msg.sender, pool, slisBNB, amountToStake);
   }
 
   /**
@@ -81,10 +75,10 @@ contract ListaGateway is IListaGateway, Ownable {
   }
 
   /**
-   * @dev Get slisBNB strategy address used by ListaGateway
+   * @dev Get slisBNB pool address used by ListaGateway
    */
   function getPoolAddress() external view returns (address) {
-    return address(strategy);
+    return address(pool);
   }
 
   /**

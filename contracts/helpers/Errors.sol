@@ -21,7 +21,7 @@ library Errors {
   string public constant SIGNATURE_EXPIRED = '13'; // 'signature expired'
   string public constant ARRAY_LENGTH_MISMATCH = '14'; // 'array lengths do not match'
   string public constant ZERO_SHARES_NOT_VALID = '15'; // 'shares should not be zero!'
-  string public constant DEPOSIT_EXCEEDS_MAX_LENGTH = '16'; // 'deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH'
+  string public constant DEPOSIT_EXCEEDS_MAX_LENGTH = '16'; // 'deposit would exceed MAX_STAKER_POOL_LIST_LENGTH'
   string public constant SHARE_AMOUNT_TOO_HIGH = '17'; // 'share amount too high'
   string public constant POOL_NOT_FOUND = '18'; // 'pool not found'
   string public constant ONLY_POOL_CONTROLLER = '19'; // 'caller must be PoolController'

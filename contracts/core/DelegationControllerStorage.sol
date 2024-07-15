@@ -40,7 +40,7 @@ abstract contract DelegationControllerStorage is IDelegationController {
   /**
    * @notice returns the total number of shares in `pool` that are delegated to `operator`.
    * @notice Mapping: operator => pool => total number of shares in the pool delegated to the operator.
-   * @dev By design, the following invariant should hold for each Strategy:
+   * @dev By design, the following invariant should hold for each Pool:
    * (operator's shares in delegation manager) = sum (shares above zero of all stakers delegated to operator)
    * = sum (delegateable shares of all stakers delegated to the operator)
    */
@@ -85,7 +85,7 @@ abstract contract DelegationControllerStorage is IDelegationController {
   mapping(address => uint256) public cumulativeWithdrawalsQueued;
 
   /**
-   * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in timestamp, and adjustable by this contract's owner,
+   * @notice Minimum delay enforced by this contract per Pool for completing queued withdrawals. Measured in timestamp, and adjustable by this contract's owner,
    * up to a maximum of `MAX_WITHDRAWAL_DELAY`. Minimum value is 0 (i.e. no delay enforced).
    */
   mapping(IPool => uint256) public poolWithdrawalDelay;

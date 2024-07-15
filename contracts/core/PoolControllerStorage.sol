@@ -17,7 +17,7 @@ abstract contract PoolControllerStorage is IPoolController {
   bytes32 public constant DEPOSIT_TYPEHASH =
     keccak256('Deposit(address staker,address pool,address token,uint256 amount,uint256 nonce,uint256 expiry)');
   // maximum length of dynamic arrays in `stakerPoolList` mapping, for sanity's sake
-  uint8 internal constant MAX_STAKER_STRATEGY_LIST_LENGTH = 32;
+  uint8 internal constant MAX_STAKER_POOL_LIST_LENGTH = 32;
 
   // system contracts
   IDelegationController public immutable delegation;

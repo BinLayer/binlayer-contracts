@@ -267,7 +267,7 @@ contract PoolController is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
 
     // if they dont have existing shares of this pool, add it to their strats
     if (stakerPoolShares[staker][pool] == 0) {
-      require(stakerPoolList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH, Errors.DEPOSIT_EXCEEDS_MAX_LENGTH);
+      require(stakerPoolList[staker].length < MAX_STAKER_POOL_LIST_LENGTH, Errors.DEPOSIT_EXCEEDS_MAX_LENGTH);
       stakerPoolList[staker].push(pool);
     }
 
