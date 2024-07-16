@@ -13,7 +13,7 @@ const func: DeployFunction = async function ({
   console.log('=== Post deployment hook ===');
 
   await hre.run('print-deployments');
-  await hre.run('transfer-protocol-ownership');
+  // await hre.run('transfer-protocol-ownership');
 };
 
 func.tags = ['after-deploy'];

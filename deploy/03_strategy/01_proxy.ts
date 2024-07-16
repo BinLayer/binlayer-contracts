@@ -7,9 +7,10 @@ import {
   PROXY_ADMIN_ID,
   POOL_IMPL_ID,
   POOL_PROXY_ID,
+  TESTNET_TOKEN_SUFFIX,
 } from '../../helpers/deploy-ids';
 import { ethers } from 'ethers';
-import { getParamPerNetwork } from '../../helpers/config-helpers';
+import { getParamPerNetwork, isProduction } from '../../helpers/config-helpers';
 import { Configs } from '../../helpers/config';
 
 const func: DeployFunction = async function ({
@@ -32,16 +33,20 @@ const func: DeployFunction = async function ({
 
   for (let key in configs) {
     const config = configs[key];
+    const tokenAddress = isProduction()
+      ? config.tokenAddress
+      : (await deployments.get(`${key}${TESTNET_TOKEN_SUFFIX}`)).address;
     await deploy(`${key}${POOL_PROXY_ID}`, {
       from: deployer,
-      contract: 'TransparentUpgradeableProxy',
+      contract:
+        '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
       args: [
         PoolImplArtifact.address,
         ProxyAdminArtifact.address,
         ifacePool.encodeFunctionData('initialize', [
           config.maxPerDeposit,
           config.maxDeposits,
-          config.tokenAddress,
+          tokenAddress,
           pauserRegistryAddress,
         ]),
       ],

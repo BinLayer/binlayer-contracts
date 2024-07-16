@@ -1,8 +1,28 @@
 import { ZERO_ADDRESS } from './constants';
-import { IConfiguration, eBscNetwork } from './types';
+import { IConfiguration, eBscNetwork, eEthereumNetwork } from './types';
 
 export const Configs: IConfiguration = {
   PoolConfigs: {
+    [eEthereumNetwork.hardhat]: {
+      stBNB: {
+        tokenAddress: '',
+        tokenName: 'Staked BNB',
+        tokenSymbol: 'stBNB',
+        maxPerDeposit:
+          '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+        maxDeposits:
+          '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+        withdrawalDelay: 180,
+      },
+      slisBNB: {
+        tokenAddress: '',
+        tokenName: 'Staked Lista BNB',
+        tokenSymbol: 'slisBNB',
+        maxPerDeposit: '10000000000000000000000',
+        maxDeposits: '10000000000000000000000000',
+        withdrawalDelay: 180,
+      },
+    },
     [eBscNetwork.bscTestnet]: {
       WBNB: {
         tokenAddress: '0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd',
@@ -49,18 +69,23 @@ export const Configs: IConfiguration = {
     [eBscNetwork.bsc]: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
   },
   MinWithdrawalDelay: {
+    [eEthereumNetwork.hardhat]: 60,
     [eBscNetwork.bscTestnet]: 60,
     [eBscNetwork.bsc]: 259200,
   },
   PoolControllerPausedStatus: {
+    [eEthereumNetwork.hardhat]: 0,
     [eBscNetwork.bscTestnet]: 0,
     [eBscNetwork.bsc]: 0,
   },
   DelegationControllerPausedStatus: {
+    [eEthereumNetwork.hardhat]: 0,
     [eBscNetwork.bscTestnet]: 1,
     [eBscNetwork.bsc]: 1,
   },
   SlasherPausedStatus: {
+    [eEthereumNetwork.hardhat]:
+      '115792089237316195423570985008687907853269984665640564039457584007913129639935',
     [eBscNetwork.bscTestnet]:
       '115792089237316195423570985008687907853269984665640564039457584007913129639935',
     [eBscNetwork.bsc]:

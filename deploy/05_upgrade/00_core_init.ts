@@ -16,7 +16,7 @@ import {
   WRAPPED_TOKEN_GATEWAY_ID,
 } from '../../helpers/deploy-ids';
 import { ethers } from 'ethers';
-import { getParamPerNetwork } from '../../helpers/config-helpers';
+import { getParamPerNetwork, isProduction } from '../../helpers/config-helpers';
 import { Configs } from '../../helpers/config';
 
 const func: DeployFunction = async function ({
@@ -44,7 +44,7 @@ const func: DeployFunction = async function ({
 
   const proxyAdmin = await getContract(PROXY_ADMIN_ID);
 
-  const owner = getParamPerNetwork(Configs.Owner, network);
+  const owner = isProduction() ? getParamPerNetwork(Configs.Owner, network) : deployer;
   const minWithdrawalDelay = getParamPerNetwork(Configs.MinWithdrawalDelay, network);
   const configs = getParamPerNetwork(Configs.PoolConfigs, network);
   const pools = [];
@@ -99,7 +99,7 @@ const func: DeployFunction = async function ({
     console.log(`[Deployment][INFO] Config gateway ${pools}`);
   }
 
-  const whiteLister = getParamPerNetwork(Configs.WhiteLister, network);
+  const whiteLister = isProduction() ? getParamPerNetwork(Configs.WhiteLister, network) : deployer;
   const poolControllerPausedStatus = getParamPerNetwork(
     Configs.PoolControllerPausedStatus,
     network

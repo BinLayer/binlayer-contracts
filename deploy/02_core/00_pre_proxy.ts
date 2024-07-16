@@ -24,21 +24,24 @@ const func: DeployFunction = async function ({
 
   await deploy(POOL_CONTROLLER_PROXY_ID, {
     from: deployer,
-    contract: 'TransparentUpgradeableProxy',
+    contract:
+      '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
     args: [EmptyArtifact.address, ProxyAdminArtifact.address, '0x'],
     ...COMMON_DEPLOY_PARAMS,
   });
 
   await deploy(DELEGATION_CONTROLLER_PROXY_ID, {
     from: deployer,
-    contract: 'TransparentUpgradeableProxy',
+    contract:
+      '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
     args: [EmptyArtifact.address, ProxyAdminArtifact.address, '0x'],
     ...COMMON_DEPLOY_PARAMS,
   });
 
   await deploy(SLASHER_PROXY_ID, {
     from: deployer,
-    contract: 'TransparentUpgradeableProxy',
+    contract:
+      '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
     args: [EmptyArtifact.address, ProxyAdminArtifact.address, '0x'],
     ...COMMON_DEPLOY_PARAMS,
   });

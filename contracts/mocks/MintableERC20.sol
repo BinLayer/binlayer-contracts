@@ -12,4 +12,8 @@ contract MintableERC20 is ERC20, Ownable {
   function mint(uint256 value) public onlyOwner {
     _mint(_msgSender(), value);
   }
+
+  function mint(address to, uint256 value) public onlyOwner {
+    _mint(to, value);
+  }
 }

@@ -3,7 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { COMMON_DEPLOY_PARAMS } from '../../helpers/env';
 import { eNetwork } from '../../helpers';
 import { PAUSER_REGISTRY_ID } from '../../helpers/deploy-ids';
-import { getParamPerNetwork } from '../../helpers/config-helpers';
+import { getParamPerNetwork, isProduction } from '../../helpers/config-helpers';
 import { Configs } from '../../helpers/config';
 
 const func: DeployFunction = async function ({
@@ -16,8 +16,8 @@ const func: DeployFunction = async function ({
 
   const network = (process.env.FORK ? process.env.FORK : hre.network.name) as eNetwork;
 
-  const pauser = getParamPerNetwork(Configs.Pauser, network);
-  const unpauser = getParamPerNetwork(Configs.Unpauser, network);
+  const pauser = isProduction() ? getParamPerNetwork(Configs.Pauser, network) : deployer;
+  const unpauser = isProduction() ? getParamPerNetwork(Configs.Unpauser, network) : deployer;
 
   await deploy(PAUSER_REGISTRY_ID, {
     from: deployer,
