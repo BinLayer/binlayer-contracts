@@ -31,7 +31,7 @@
         "components": [
           {
             "internalType": "address",
-            "name": "earningsReceiver",
+            "name": "__deprecated_earningsReceiver",
             "type": "address"
           },
           {
@@ -86,7 +86,7 @@
         "components": [
           {
             "internalType": "address",
-            "name": "earningsReceiver",
+            "name": "__deprecated_earningsReceiver",
             "type": "address"
           },
           {
@@ -766,25 +766,6 @@
         "internalType": "address",
         "name": "operator",
         "type": "address"
-      }
-    ],
-    "name": "earningsReceiver",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
       },
       {
         "internalType": "contract IPool[]",
@@ -902,7 +883,7 @@
         "components": [
           {
             "internalType": "address",
-            "name": "earningsReceiver",
+            "name": "__deprecated_earningsReceiver",
             "type": "address"
           },
           {
@@ -940,7 +921,7 @@
         "components": [
           {
             "internalType": "address",
-            "name": "earningsReceiver",
+            "name": "__deprecated_earningsReceiver",
             "type": "address"
           },
           {
@@ -1043,7 +1024,7 @@
         "components": [
           {
             "internalType": "address",
-            "name": "earningsReceiver",
+            "name": "__deprecated_earningsReceiver",
             "type": "address"
           },
           {

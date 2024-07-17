@@ -16,8 +16,8 @@ import './IPoolController.sol';
 interface IDelegationController is ISignatureUtils {
   // @notice Struct used for storing information about a single operator who has registered with BinLayer
   struct OperatorDetails {
-    // @notice address to receive the rewards that the operator earns via serving applications built on BinLayer.
-    address earningsReceiver;
+    // @notice DEPRECATED -- this field is no longer used, rewards are handled in RewardsCoordinator.sol
+    address __deprecated_earningsReceiver;
     /**
      * @notice Address to verify signatures when a staker wishes to delegate to the operator, as well as controlling "forced undelegations".
      * @dev Signature verification follows these rules:
@@ -149,7 +149,6 @@ interface IDelegationController is ISignatureUtils {
    * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
    *
    * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
-   * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
    * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
    */
   function registerAsOperator(OperatorDetails calldata registeringOperatorDetails, string calldata metadataURI) external;
@@ -159,7 +158,6 @@ interface IDelegationController is ISignatureUtils {
    * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
    *
    * @dev The caller must have previously registered as an operator in BinLayer.
-   * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
    */
   function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external;
 
@@ -295,11 +293,6 @@ interface IDelegationController is ISignatureUtils {
    * @notice Returns the OperatorDetails struct associated with an `operator`.
    */
   function operatorDetails(address operator) external view returns (OperatorDetails memory);
-
-  /*
-   * @notice Returns the earnings receiver address for an operator
-   */
-  function earningsReceiver(address operator) external view returns (address);
 
   /**
    * @notice Returns the delegationApprover account for an operator

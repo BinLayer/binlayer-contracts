@@ -81,11 +81,11 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
    * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
    *
    * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
-   * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
+   * @dev This function will revert if the caller is already delegated to an operator.
    * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
    */
   function registerAsOperator(OperatorDetails calldata registeringOperatorDetails, string calldata metadataURI) external {
-    require(_operatorDetails[msg.sender].earningsReceiver == address(0), Errors.OPERATOR_ALREADY_REGISTERED);
+    require(!isDelegated(msg.sender), Errors.OPERATOR_ALREADY_REGISTERED);
     _setOperatorDetails(msg.sender, registeringOperatorDetails);
     SignatureWithExpiry memory emptySignatureAndExpiry;
     // delegate from the operator to themselves
@@ -100,7 +100,6 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
    * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
    *
    * @dev The caller must have previously registered as an operator in BinLayer.
-   * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
    */
   function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external {
     require(isOperator(msg.sender), Errors.CALLER_NOT_OPERATOR);
@@ -130,6 +129,8 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
    * in this case to save on complexity + gas costs
    */
   function delegateTo(address operator, SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 approverSalt) external {
+    require(!isDelegated(msg.sender), Errors.ALREADY_DELEGATED);
+    require(isOperator(operator), Errors.NOT_REGISTERED_IN_BINLAYER);
     // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
     _delegate(msg.sender, operator, approverSignatureAndExpiry, approverSalt);
   }
@@ -160,6 +161,9 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
   ) external {
     // check the signature expiry
     require(stakerSignatureAndExpiry.expiry >= block.timestamp, Errors.SIGNATURE_EXPIRED);
+
+    require(!isDelegated(staker), Errors.ALREADY_DELEGATED);
+    require(isOperator(operator), Errors.NOT_REGISTERED_IN_BINLAYER);
 
     // calculate the digest hash, then increment `staker`'s nonce
     uint256 currentStakerNonce = stakerNonce[staker];
@@ -376,11 +380,8 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
    * @notice Sets operator parameters in the `_operatorDetails` mapping.
    * @param operator The account registered as an operator updating their operatorDetails
    * @param newOperatorDetails The new parameters for the operator
-   *
-   * @dev This function will revert if the operator attempts to set their `earningsReceiver` to address(0).
    */
   function _setOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) internal {
-    require(newOperatorDetails.earningsReceiver != address(0), Errors.ZERO_ADDRESS_NOT_VALID);
     require(newOperatorDetails.stakerOptOutWindow <= MAX_STAKER_OPT_OUT_WINDOW, Errors.OPT_OUT_WINDOW_EXCEEDS_MAX);
     require(newOperatorDetails.stakerOptOutWindow >= _operatorDetails[operator].stakerOptOutWindow, Errors.DECREASE_OPT_OUT_WINDOW);
     _operatorDetails[operator] = newOperatorDetails;
@@ -404,9 +405,6 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
     SignatureWithExpiry memory approverSignatureAndExpiry,
     bytes32 approverSalt
   ) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
-    require(!isDelegated(staker), Errors.ALREADY_DELEGATED);
-    require(isOperator(operator), Errors.NOT_REGISTERED_IN_BINLAYER);
-
     // fetch the operator's `delegationApprover` address and store it in memory in case we need to use it multiple times
     address _delegationApprover = _operatorDetails[operator].delegationApprover;
     /**
@@ -654,7 +652,7 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
    * @notice Returns true is an operator has previously registered for delegation.
    */
   function isOperator(address operator) public view returns (bool) {
-    return (_operatorDetails[operator].earningsReceiver != address(0));
+    return delegatedTo[operator] == operator;
   }
 
   /**
@@ -662,13 +660,6 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
    */
   function operatorDetails(address operator) external view returns (OperatorDetails memory) {
     return _operatorDetails[operator];
-  }
-
-  /*
-   * @notice Returns the earnings receiver address for an operator
-   */
-  function earningsReceiver(address operator) external view returns (address) {
-    return _operatorDetails[operator].earningsReceiver;
   }
 
   /**

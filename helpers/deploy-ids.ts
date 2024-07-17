@@ -13,5 +13,7 @@ export const EMPTY_CONTRANCT_ID = 'EmptyContract';
 export const PROXY_ADMIN_ID = 'ProxyAdmin';
 export const WRAPPED_TOKEN_GATEWAY_ID = 'WrappedTokenGateway';
 export const LISTA_GATEWAY_ID = 'ListaGateway';
+export const AVS_DIRECTORY_PROXY_ID = `AVSDirectory-${PROXY_ID}`;
+export const AVS_DIRECTORY_IMPL_ID = `AVSDirectory-${IMPL_ID}`;
 
 export const TESTNET_TOKEN_SUFFIX = '-TestnetMintableERC20';
