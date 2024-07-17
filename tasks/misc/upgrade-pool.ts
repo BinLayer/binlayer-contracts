@@ -27,7 +27,7 @@ task(`upgrade-pool`, `Upgrade Pool`)
       POOL_CONTROLLER_PROXY_ID
     );
 
-    const poolImpl = await hre.deployments.deploy(POOL_IMPL_ID, {
+    const poolImpl = await hre.deployments.deploy(`V2-${POOL_IMPL_ID}`, {
       from: deployer,
       contract: 'PoolBaseTVLLimits',
       args: [poolControllerProxyAddress],
@@ -40,9 +40,9 @@ task(`upgrade-pool`, `Upgrade Pool`)
     const proxyAdmin = await getContract(PROXY_ADMIN_ID);
     await waitForTx(
       await proxyAdmin.upgrade(
-        poolControllerProxyAddress,
+        poolProxyAddress,
         (
-          await hre.deployments.get(POOL_IMPL_ID)
+          await hre.deployments.get(`V2-${POOL_IMPL_ID}`)
         ).address
       )
     );

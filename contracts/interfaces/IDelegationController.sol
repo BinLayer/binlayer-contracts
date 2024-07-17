@@ -211,8 +211,7 @@ interface IDelegationController is ISignatureUtils {
   ) external;
 
   /**
-   * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into the "undelegation limbo" mode of the EigenPodManager
-   * and unstake of all of the staker's shares in the PoolController.sol (to the staker), if necessary.
+   * @notice Undelegates the staker from the operator who they are delegated to.
    * @param staker The account to be undelegated.
    * @return withdrawalRoot The root of the newly queued withdrawal, if a withdrawal was queued. Otherwise just bytes32(0).
    *
@@ -270,7 +269,7 @@ interface IDelegationController is ISignatureUtils {
    * @param shares The number of shares to increase.
    *
    * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `pool` by `shares`. Otherwise does nothing.
-   * @dev Callable only by the PoolController.sol or EigenPodManager.
+   * @dev Callable only by the PoolController.sol.
    */
   function increaseDelegatedShares(address staker, IPool pool, uint256 shares) external;
 
@@ -281,7 +280,7 @@ interface IDelegationController is ISignatureUtils {
    * @param shares The number of shares to decrease.
    *
    * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in `pool` by `shares`. Otherwise does nothing.
-   * @dev Callable only by the PoolController.sol or EigenPodManager.
+   * @dev Callable only by the PoolController.sol.
    */
   function decreaseDelegatedShares(address staker, IPool pool, uint256 shares) external;
 

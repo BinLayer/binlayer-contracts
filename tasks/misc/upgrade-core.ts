@@ -32,18 +32,21 @@ task(`upgrade-core`, `Upgrade PoolController & DelegationController`).setAction(
   );
   const { address: slasherAddress } = await hre.deployments.get(SLASHER_PROXY_ID);
 
-  const poolControllerImpl = await hre.deployments.deploy(POOL_CONTROLLER_IMPL_ID, {
+  const poolControllerImpl = await hre.deployments.deploy(`V2-${POOL_CONTROLLER_IMPL_ID}`, {
     contract: 'PoolController',
     from: deployer,
     args: [delegationControllerProxyAddress, slasherAddress],
   });
   console.log(`[Deployment][INFO] PoolController impl deployed ${poolControllerImpl.address}`);
 
-  const delegationControllerImpl = await hre.deployments.deploy(DELEGATION_CONTROLLER_IMPL_ID, {
-    contract: 'DelegationController',
-    from: deployer,
-    args: [poolControllerProxyAddress, slasherAddress],
-  });
+  const delegationControllerImpl = await hre.deployments.deploy(
+    `V2-${DELEGATION_CONTROLLER_IMPL_ID}`,
+    {
+      contract: 'DelegationController',
+      from: deployer,
+      args: [poolControllerProxyAddress, slasherAddress],
+    }
+  );
   console.log(
     `[Deployment][INFO] DelegationController impl deployed ${delegationControllerImpl.address}`
   );
@@ -55,7 +58,7 @@ task(`upgrade-core`, `Upgrade PoolController & DelegationController`).setAction(
     await proxyAdmin.upgrade(
       poolControllerProxyAddress,
       (
-        await hre.deployments.get(POOL_CONTROLLER_IMPL_ID)
+        await hre.deployments.get(`V2-${POOL_CONTROLLER_IMPL_ID}`)
       ).address
     )
   );
@@ -65,7 +68,7 @@ task(`upgrade-core`, `Upgrade PoolController & DelegationController`).setAction(
     await proxyAdmin.upgrade(
       delegationControllerProxyAddress,
       (
-        await hre.deployments.get(DELEGATION_CONTROLLER_IMPL_ID)
+        await hre.deployments.get(`V2-${DELEGATION_CONTROLLER_IMPL_ID}`)
       ).address
     )
   );

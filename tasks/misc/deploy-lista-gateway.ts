@@ -1,6 +1,10 @@
 import { task } from 'hardhat/config';
 import { eNetwork, FORK } from '../../helpers';
-import { POOL_PROXY_ID, LISTA_GATEWAY_ID } from '../../helpers/deploy-ids';
+import {
+  POOL_PROXY_ID,
+  LISTA_GATEWAY_ID,
+  POOL_CONTROLLER_PROXY_ID,
+} from '../../helpers/deploy-ids';
 import { Configs } from '../../helpers/config';
 import { getParamPerNetwork } from '../../helpers/config-helpers';
 
@@ -25,10 +29,12 @@ task(`deploy-lista-gateway`, `Deploys the ListaGateway contract`).setAction(asyn
   const slisBNBAddress = '0x96F124Ce690F082f469066aFE90AF633F93d94d8';
 
   const { address: poolAddress } = await hre.deployments.get(`slisBNB${POOL_PROXY_ID}`);
-  const { address: poolControllerProxyAddress } = await hre.deployments.get(POOL_PROXY_ID);
+  const { address: poolControllerProxyAddress } = await hre.deployments.get(
+    POOL_CONTROLLER_PROXY_ID
+  );
 
   const { deployer } = await hre.getNamedAccounts();
-  const listaGateway = await hre.deployments.deploy(LISTA_GATEWAY_ID, {
+  const listaGateway = await hre.deployments.deploy(`V2-${LISTA_GATEWAY_ID}`, {
     contract: 'ListaGateway',
     from: deployer,
     args: [

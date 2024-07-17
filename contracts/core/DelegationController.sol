@@ -328,7 +328,7 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
    * @param shares The number of shares to decrease.
    *
    * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in `pool` by `shares`. Otherwise does nothing.
-   * @dev Callable only by the PoolController.sol or EigenPodManager.
+   * @dev Callable only by the PoolController.sol.
    */
   function decreaseDelegatedShares(address staker, IPool pool, uint256 shares) external onlyPoolController {
     // if the staker is delegated to an operator
@@ -494,7 +494,7 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
           ++i;
         }
       }
-      // Award shares back in PoolController.sol/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
+      // Award shares back in PoolController.sol. If withdrawer is delegated, increase the shares delegated to the operator
     } else {
       address currentOperator = delegatedTo[msg.sender];
       for (uint256 i = 0; i < withdrawal.pools.length; ) {

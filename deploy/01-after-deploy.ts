@@ -14,7 +14,7 @@ const func: DeployFunction = async function ({
 
   await hre.run('print-deployments');
   // await hre.run('transfer-protocol-ownership');
-  await hre.run('export', { exportAll: 'deployments/deployments_info.ts' });
+  // await hre.run('export', { exportAll: 'deployments/deployments_info.ts' });
 };
 
 func.tags = ['after-deploy'];
