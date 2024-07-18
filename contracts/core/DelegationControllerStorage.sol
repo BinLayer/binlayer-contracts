@@ -70,7 +70,7 @@ abstract contract DelegationControllerStorage is IDelegationController {
 
   /**
    * @notice Global minimum withdrawal delay for all pool withdrawals.
-   * In a prior Goerli release, we only had a global min withdrawal delay across all strategies.
+   * In a prior Goerli release, we only had a global min withdrawal delay across all pools.
    * In addition, we now also configure withdrawal delays on a per-pool basis.
    * To withdraw from a pool, max(minWithdrawalDelay, poolWithdrawalDelay[pool]) number of timestamp must have passed.
    * See mapping poolWithdrawalDelay below for per-pool withdrawal delays.

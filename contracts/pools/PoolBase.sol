@@ -8,10 +8,10 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol';
 
 /**
- * @title Base implementation of `IPool` interface, designed to be inherited from by more complex strategies.
+ * @title Base implementation of `IPool` interface, designed to be inherited from by more complex pools.
  * @notice Simple, basic, "do-nothing" Pool that holds a single underlying token and returns it on withdrawals.
  * Implements minimal versions of the IPool functions, this contract is designed to be inherited by
- * more complex strategies, which can then override its functions as necessary.
+ * more complex pools, which can then override its functions as necessary.
  * @dev Note that some functions have their mutability restricted; developers inheriting from this contract cannot broaden
  * the mutability without modifying this contract itself.
  * @dev This contract is expressly *not* intended for use with 'fee-on-transfer'-type tokens.
@@ -154,7 +154,7 @@ contract PoolBase is Initializable, Pausable, IPool {
   }
 
   /**
-   * @notice Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
+   * @notice Called in the external `deposit` function, before any logic is executed. Expected to be overridden if pools want such logic.
    * @param token The token being deposited
    * @param amount The amount of `token` being deposited
    */
@@ -163,7 +163,7 @@ contract PoolBase is Initializable, Pausable, IPool {
   }
 
   /**
-   * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
+   * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if pools want such logic.
    * @param recipient The address that will receive the withdrawn tokens
    * @param token The token being withdrawn
    * @param amountShares The amount of shares being withdrawn
@@ -185,7 +185,7 @@ contract PoolBase is Initializable, Pausable, IPool {
 
   /**
    * @notice Currently returns a brief string explaining the pool's goal & purpose, but for more complex
-   * strategies, may be a link to metadata that explains in more detail.
+   * pools, may be a link to metadata that explains in more detail.
    */
   function explanation() external pure virtual override returns (string memory) {
     return 'Base Pool implementation to inherit from for more complex implementations';
@@ -196,7 +196,7 @@ contract PoolBase is Initializable, Pausable, IPool {
    * @notice In contrast to `sharesToUnderlying`, this function guarantees no state modifications
    * @param amountShares is the amount of shares to calculate its conversion into the underlying token
    * @return The amount of underlying tokens corresponding to the input `amountShares`
-   * @dev Implementation for these functions in particular may vary significantly for different strategies
+   * @dev Implementation for these functions in particular may vary significantly for different pools
    */
   function sharesToUnderlyingView(uint256 amountShares) public view virtual override returns (uint256) {
     // account for virtual shares and balance
@@ -211,7 +211,7 @@ contract PoolBase is Initializable, Pausable, IPool {
    * @notice In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
    * @param amountShares is the amount of shares to calculate its conversion into the underlying token
    * @return The amount of underlying tokens corresponding to the input `amountShares`
-   * @dev Implementation for these functions in particular may vary significantly for different strategies
+   * @dev Implementation for these functions in particular may vary significantly for different pools
    */
   function sharesToUnderlying(uint256 amountShares) public view virtual override returns (uint256) {
     return sharesToUnderlyingView(amountShares);
@@ -222,7 +222,7 @@ contract PoolBase is Initializable, Pausable, IPool {
    * @notice In contrast to `underlyingToShares`, this function guarantees no state modifications
    * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into pool shares
    * @return The amount of shares corresponding to the input `amountUnderlying`
-   * @dev Implementation for these functions in particular may vary significantly for different strategies
+   * @dev Implementation for these functions in particular may vary significantly for different pools
    */
   function underlyingToSharesView(uint256 amountUnderlying) public view virtual returns (uint256) {
     // account for virtual shares and balance
@@ -237,7 +237,7 @@ contract PoolBase is Initializable, Pausable, IPool {
    * @notice In contrast to `underlyingToSharesView`, this function **may** make state modifications
    * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into pool shares
    * @return The amount of shares corresponding to the input `amountUnderlying`
-   * @dev Implementation for these functions in particular may vary significantly for different strategies
+   * @dev Implementation for these functions in particular may vary significantly for different pools
    */
   function underlyingToShares(uint256 amountUnderlying) external view virtual returns (uint256) {
     return underlyingToSharesView(amountUnderlying);

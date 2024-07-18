@@ -33,7 +33,7 @@ interface IPool {
    * @notice In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
    * @param amountShares is the amount of shares to calculate its conversion into the underlying token
    * @return The amount of underlying tokens corresponding to the input `amountShares`
-   * @dev Implementation for these functions in particular may vary significantly for different strategies
+   * @dev Implementation for these functions in particular may vary significantly for different pools
    */
   function sharesToUnderlying(uint256 amountShares) external returns (uint256);
 
@@ -42,7 +42,7 @@ interface IPool {
    * @notice In contrast to `underlyingToSharesView`, this function **may** make state modifications
    * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into pool shares
    * @return The amount of underlying tokens corresponding to the input `amountShares`
-   * @dev Implementation for these functions in particular may vary significantly for different strategies
+   * @dev Implementation for these functions in particular may vary significantly for different pools
    */
   function underlyingToShares(uint256 amountUnderlying) external returns (uint256);
 
@@ -63,7 +63,7 @@ interface IPool {
    * @notice In contrast to `sharesToUnderlying`, this function guarantees no state modifications
    * @param amountShares is the amount of shares to calculate its conversion into the underlying token
    * @return The amount of shares corresponding to the input `amountUnderlying`
-   * @dev Implementation for these functions in particular may vary significantly for different strategies
+   * @dev Implementation for these functions in particular may vary significantly for different pools
    */
   function sharesToUnderlyingView(uint256 amountShares) external view returns (uint256);
 
@@ -72,7 +72,7 @@ interface IPool {
    * @notice In contrast to `underlyingToShares`, this function guarantees no state modifications
    * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into pool shares
    * @return The amount of shares corresponding to the input `amountUnderlying`
-   * @dev Implementation for these functions in particular may vary significantly for different strategies
+   * @dev Implementation for these functions in particular may vary significantly for different pools
    */
   function underlyingToSharesView(uint256 amountUnderlying) external view returns (uint256);
 

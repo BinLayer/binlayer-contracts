@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 /**
  * @title Interface for an `ISocketUpdater` where operators can update their sockets.
- * @author Layr Labs, Inc.
  */
 interface ISocketUpdater {
   // EVENTS

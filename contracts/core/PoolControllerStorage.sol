@@ -35,7 +35,7 @@ abstract contract PoolControllerStorage is IPoolController {
   address public poolWhitelister;
   /// @notice Mapping: staker => Pool => number of shares which they currently hold
   mapping(address => mapping(IPool => uint256)) public stakerPoolShares;
-  /// @notice Mapping: staker => array of strategies in which they have nonzero shares
+  /// @notice Mapping: staker => array of pools in which they have nonzero shares
   mapping(address => IPool[]) public stakerPoolList;
   /// @notice Mapping: pool => whether or not stakers are allowed to deposit into it
   mapping(IPool => bool) public poolIsWhitelistedForDeposit;
