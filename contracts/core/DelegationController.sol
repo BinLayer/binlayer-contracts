@@ -652,7 +652,7 @@ contract DelegationController is Initializable, OwnableUpgradeable, Pausable, De
    * @notice Returns true is an operator has previously registered for delegation.
    */
   function isOperator(address operator) public view returns (bool) {
-    return delegatedTo[operator] == operator;
+    return operator != address(0) && delegatedTo[operator] == operator;
   }
 
   /**
