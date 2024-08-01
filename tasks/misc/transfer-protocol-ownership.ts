@@ -37,7 +37,7 @@ task(`transfer-protocol-ownership`, `Transfer the ownership of protocol from dep
 
     const proxyAdmin = await getContract(PROXY_ADMIN_ID);
     const poolController = await hre.ethers.getContractAt(
-      'PollController',
+      'PoolController',
       (
         await getContract(POOL_CONTROLLER_PROXY_ID)
       ).address
